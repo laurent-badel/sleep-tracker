@@ -93,6 +93,8 @@ dev_dependencies:
 
 **Version discipline (agent instruction):** after `flutter pub get`, replace the carets above with the exact resolved versions. For `flutter_local_notifications` specifically: before writing any scheduling code, open the installed package source (`~/.pub-cache/hosted/pub.dev/flutter_local_notifications-<version>/lib/`) and verify the named parameters of `zonedSchedule` and the method names on `AndroidFlutterLocalNotificationsPlugin`. These signatures have shifted across recent majors — do not code from remembered signatures.
 
+**Known issue — `flutter_timezone` applies Kotlin Gradle Plugin (KGP):** the build warns that `flutter_timezone` applies KGP itself, and *future* Flutter versions will fail to build for plugins that do. It builds fine today (verified 2026-08-21, Flutter 3.47.1) — no action required now. When upgrading Flutter, check `flutter_timezone`'s changelog for a "Built-in Kotlin" release first; if none exists, the plugin's upstream issue is the right place to track it (link in the warning: `migrate-to-built-in-kotlin` guide).
+
 **Aside on `part` files:** the generated part directive must match the *current file's own name* — `database.dart` needs `part 'database.g.dart';`, `daily_dao.dart` needs `part 'daily_dao.g.dart';`. Both files need their own directive. Run `dart run build_runner build --delete-conflicting-outputs` (or `watch` during development) after any schema/DAO change.
 
 ### Table: DailyEntries

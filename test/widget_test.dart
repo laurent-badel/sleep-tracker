@@ -1,4 +1,5 @@
 import 'package:drift/native.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
@@ -33,5 +34,11 @@ void main() {
     expect(find.text('Today'), findsWidgets);
     expect(find.text('History'), findsWidgets);
     expect(find.text('Stats'), findsWidgets);
+
+    // Dispose the tree inside the test body, then advance fake time so
+    // drift's zero-duration stream-close timer fires (a plain pump() with no
+    // duration only flushes microtasks — the timer would still be pending).
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 1));
   });
 }
