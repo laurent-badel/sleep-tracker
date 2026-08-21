@@ -43,7 +43,11 @@ Future<void> main() async {
 
   // Notifications: plugin init, callbacks, then re-schedule from saved settings.
   final notifications = NotificationService();
-  await notifications.init();
+  await notifications.init(
+    onDidReceiveNotificationResponse: onNotificationResponse,
+    onDidReceiveBackgroundNotificationResponse:
+        onBackgroundNotificationResponse,
+  );
   await notifications.rescheduleFromSettings();
 
   // Cold start from a notification tap never fires the tap callbacks — check

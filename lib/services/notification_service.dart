@@ -1,39 +1,162 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/timezone.dart' as tz;
+
 /// Wraps `flutter_local_notifications` + `shared_preferences` reminder
-/// settings.
+/// settings (spec §5).
 ///
-/// Phase 1: scaffolding stub — the full implementation (plugin init,
-/// permissions, `zonedSchedule`, deep-link callbacks) lands in Phase 5. The
-/// API below is frozen by the spec (§5); keep the signatures stable.
+/// API verified against the installed package source (v22.3.0) on 2026-08-21:
+/// - `zonedSchedule` requires `androidScheduleMode` (no default in this major).
+/// - `DarwinInitializationSettings` defaults `request*Permission` to **true**,
+///   which would prompt for permission at startup on iOS — explicitly disabled
+///   here; permissions are requested only when the user enables the reminder.
 class NotificationService {
   static const notificationId = 1001; // fixed ID → rescheduling replaces, never duplicates
   static const channelId = 'daily_reminder';
   static const channelName = 'Daily reminder';
   static const title = 'Daily check-in';
   static const body = 'Log your sleep, exercise, stress, and screen time.';
+  static const defaultHour = 20;
+  static const defaultMinute = 0;
 
-  Future<void> init() async {
-    // Phase 5: plugin.initialize with both tap callbacks.
+  static const _reminderEnabledKey = 'reminder_enabled';
+  static const _reminderHourKey = 'reminder_hour';
+  static const _reminderMinuteKey = 'reminder_minute';
+
+  final FlutterLocalNotificationsPlugin _plugin =
+      FlutterLocalNotificationsPlugin();
+
+  /// Registers both tap callbacks (spec §5, deep-link entry points 1 & 2).
+  /// `onDidReceiveBackgroundNotificationResponse` must be a top-level
+  /// `@pragma('vm:entry-point')` function (it runs in a separate isolate).
+  Future<void> init({
+    required void Function(NotificationResponse) onDidReceiveNotificationResponse,
+    required void Function(NotificationResponse) onDidReceiveBackgroundNotificationResponse,
+  }) async {
+    const settings = InitializationSettings(
+      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      iOS: DarwinInitializationSettings(
+        // Suppress init-time permission requests — we ask on enable instead.
+        requestAlertPermission: false,
+        requestSoundPermission: false,
+        requestBadgePermission: false,
+      ),
+    );
+    await _plugin.initialize(
+      settings: settings,
+      onDidReceiveNotificationResponse: onDidReceiveNotificationResponse,
+      onDidReceiveBackgroundNotificationResponse:
+          onDidReceiveBackgroundNotificationResponse,
+    );
   }
 
+  /// POST_NOTIFICATIONS on Android 13+ / UNUserNotificationCenter on iOS.
   Future<bool> requestPermissions() async {
-    // Phase 5: POST_NOTIFICATIONS on Android 13+ / UNUserNotificationCenter on iOS.
-    return false;
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return await _plugin
+              .resolvePlatformSpecificImplementation<
+                  AndroidFlutterLocalNotificationsPlugin>()
+              ?.requestNotificationsPermission() ??
+          false;
+    }
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      return await _plugin
+              .resolvePlatformSpecificImplementation<
+                  IOSFlutterLocalNotificationsPlugin>()
+              ?.requestPermissions(alert: true, badge: true, sound: true) ??
+          false;
+    }
+    // Non-mobile (tests, etc.): nothing to request.
+    return true;
   }
 
+  /// Daily repeat via `zonedSchedule` with `DateTimeComponents.time`. The next
+  /// occurrence is computed explicitly — never rely on the plugin to advance a
+  /// past time (spec §5).
   Future<void> scheduleReminder(int hour, int minute) async {
-    // Phase 5: cancel + zonedSchedule next occurrence.
+    await cancel();
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduled =
+        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    if (!scheduled.isAfter(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+
+    // Default to inexact (spec §5); escalate to exact only if already granted
+    // — the plugin does not throw when exact scheduling is silently denied.
+    final androidImpl = _plugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+    final exactAllowed =
+        await androidImpl?.canScheduleExactNotifications() ?? false;
+    final mode = exactAllowed
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
+
+    await _plugin.zonedSchedule(
+      id: notificationId,
+      title: title,
+      body: body,
+      scheduledDate: scheduled,
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          channelId,
+          channelName,
+          channelDescription: 'Once-daily reminder to log your day',
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true, // a daily reminder should show even when
+          presentSound: true, // the app is foregrounded (spec §5)
+        ),
+      ),
+      androidScheduleMode: mode,
+      matchDateTimeComponents: DateTimeComponents.time,
+      payload: 'today', // decorative in v1 — all callbacks navigate to Today
+    );
   }
 
-  Future<void> cancel() async {
-    // Phase 5.
-  }
+  Future<void> cancel() => _plugin.cancel(id: notificationId);
 
+  /// Reads saved settings and (re)schedules if enabled — the source of truth
+  /// on every launch; cheap and idempotent (spec §5).
   Future<void> rescheduleFromSettings() async {
-    // Phase 5: read shared_preferences; schedule if enabled (idempotent).
+    final settings = await loadReminderSettings();
+    if (!settings.enabled) {
+      await cancel();
+      return;
+    }
+    await scheduleReminder(settings.hour, settings.minute);
   }
 
+  /// Cold-start tap detection — a launching tap fires neither callback
+  /// (spec §5, deep-link entry point 3).
   Future<bool> launchedByNotification() async {
-    // Phase 5: wraps getNotificationAppLaunchDetails.
-    return false;
+    final details = await _plugin.getNotificationAppLaunchDetails();
+    return details?.didNotificationLaunchApp ?? false;
+  }
+
+  // ---- Reminder settings persistence (shared_preferences) ----
+
+  Future<({bool enabled, int hour, int minute})> loadReminderSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    return (
+      enabled: prefs.getBool(_reminderEnabledKey) ?? false,
+      hour: prefs.getInt(_reminderHourKey) ?? defaultHour,
+      minute: prefs.getInt(_reminderMinuteKey) ?? defaultMinute,
+    );
+  }
+
+  Future<void> saveReminderSettings({
+    required bool enabled,
+    int? hour,
+    int? minute,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_reminderEnabledKey, enabled);
+    if (hour != null) await prefs.setInt(_reminderHourKey, hour);
+    if (minute != null) await prefs.setInt(_reminderMinuteKey, minute);
   }
 }

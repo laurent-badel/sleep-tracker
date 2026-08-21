@@ -2,6 +2,9 @@
     <!-- Required even on the inexact-alarm path: the runtime prompt alone is
          not enough on Android 13+ (spec §5). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Required so the plugin can reschedule notifications across reboot
+         (plugin README, v16+ — spec §5). -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <application
         android:label="sleep_tracker"
         android:name="${applicationName}"
@@ -28,6 +31,22 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Required since plugin v16: without these receivers the scheduled
+             alarm fires but nothing shows the notification (plugin README,
+             spec §5). -->
+        <receiver
+            android:exported="false"
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
+        <receiver
+            android:exported="false"
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
