@@ -21,6 +21,9 @@ class EntryEditorForm extends StatefulWidget {
   final List<FeatureDef> features; // the currently-enabled features
   final Future<void> Function(DailyEntriesCompanion) onSave;
   final VoidCallback? onSaved; // e.g. SnackBar (Today) or Navigator.pop (History)
+  // Phase 9: optional cancel — Today passes it on the Edit path to return to
+  // the caught-up card; History omits it (dismiss = pop).
+  final VoidCallback? onCancel;
 
   const EntryEditorForm({
     super.key,
@@ -29,6 +32,7 @@ class EntryEditorForm extends StatefulWidget {
     required this.features,
     required this.onSave,
     this.onSaved,
+    this.onCancel,
   });
 
   @override
@@ -126,9 +130,22 @@ class _EntryEditorFormState extends State<EntryEditorForm> {
           ),
         ),
         const SizedBox(height: 16),
-        FilledButton(
-          onPressed: _saving ? null : _save,
-          child: Text(l10n.saveButton),
+        Row(
+          children: [
+            Expanded(
+              child: FilledButton(
+                onPressed: _saving ? null : _save,
+                child: Text(l10n.saveButton),
+              ),
+            ),
+            if (widget.onCancel != null) ...[
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: _saving ? null : widget.onCancel,
+                child: Text(l10n.cancel),
+              ),
+            ],
+          ],
         ),
       ],
     );

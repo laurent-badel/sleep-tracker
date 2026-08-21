@@ -40,7 +40,6 @@ void main() {
       ),
     );
   }
-
   Future<void> pumpStats(WidgetTester tester) async {
     await tester.pumpWidget(
       MultiProvider(
@@ -86,8 +85,10 @@ void main() {
       expect(find.text(label), findsOneWidget);
     }
 
-    // Averages row present for the sleep card with real numbers.
-    expect(find.text('7-day avg: 4.0 · 30-day avg: 4.0'), findsOneWidget);
+    // Averages row present for the sleep card — normalized 0–10 (raw mean
+    // (4+3+5)/3 = 4.0 on a 0–4 scale → 10.0 / 10, Phase 9b).
+    expect(find.text('7-day avg: 10.0 / 10 · 30-day avg: 10.0 / 10'),
+        findsOneWidget);
 
     // The 4th card is below the fold in the 600px test viewport; ListView
     // builds lazily, so scroll it into view before asserting.
@@ -97,6 +98,49 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('Screen time'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 1));
+  });
+
+  testWidgets('Stats: boolean feature shows raw frequency, not a 0–10 score',
+      (tester) async {
+    // Enable a boolean feature (workday) alongside the ordinals.
+    await featureSettings.setEnabled('workdayFlag', true);
+    await repo.upsert(
+      DailyEntriesCompanion(
+        date: Value(dateKeyForDaysAgo(0)),
+        sleepRating: const Value(4),
+        workdayFlag: const Value(1),
+        updatedAt: Value(1),
+      ),
+    );
+    await repo.upsert(
+      DailyEntriesCompanion(
+        date: Value(dateKeyForDaysAgo(1)),
+        sleepRating: const Value(3),
+        workdayFlag: const Value(1),
+        updatedAt: Value(2),
+      ),
+    );
+    await repo.upsert(
+      DailyEntriesCompanion(
+        date: Value(dateKeyForDaysAgo(2)),
+        sleepRating: const Value(5),
+        workdayFlag: const Value(0),
+        updatedAt: Value(3),
+      ),
+    );
+    await pumpStats(tester);
+
+    await tester.scrollUntilVisible(
+      find.text('Workday'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    // 2 of 3 logged days were workdays → "2 / 3 days" (never "x.x / 10").
+    expect(find.text('7-day avg: 2 / 3 days · 30-day avg: 2 / 3 days'),
+        findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(milliseconds: 1));

@@ -4,12 +4,12 @@ import 'package:provider/provider.dart';
 
 import '../data/daily_repository.dart';
 import '../data/database.dart';
-import '../l10n/feature_strings.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../models/feature_def.dart';
 import '../utils/dates.dart';
 import '../viewmodels/feature_settings_controller.dart';
 import 'widgets/entry_editor_form.dart';
+import 'widgets/entry_summary.dart';
 
 /// Tab 1 — no ViewModel (spec §0): a `StreamBuilder` on `watchAll()`, with the
 /// shared `EntryEditorForm` reused in a bottom sheet (pop on save). The FAB
@@ -162,10 +162,9 @@ class _HistoryRow extends StatelessWidget {
         DateFormat.MMMEd(locale).format(DateTime.parse(entry.date));
     final note = entry.note;
 
-    // Compact summary of enabled features: localized short label + value.
-    final summary = features
-        .map((f) => '${featureShortLabel(l10n, f.key)}:${f.getValue(entry) ?? '-'}')
-        .join(' ');
+    // Compact summary via the shared helper (spec Phase 9) — same line as the
+    // Today caught-up card, so they can't drift apart.
+    final summary = entrySummaryLine(entry, features, l10n);
 
     return ListTile(
       onTap: onTap,

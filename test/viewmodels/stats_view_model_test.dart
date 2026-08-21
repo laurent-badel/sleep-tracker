@@ -137,4 +137,82 @@ void main() {
     expect(sleepFeature.getValue(e), 1);
     expect(moodFeature.getValue(e), 3);
   });
+
+  group('normalizeMeanTo10 (spec Phase 9b)', () {
+    test('perfect mean on a 5-point scale (max 4) → 10.0', () {
+      expect(normalizeMeanTo10(4.0, 5), 10.0);
+    });
+
+    test('zero mean → 0.0', () {
+      expect(normalizeMeanTo10(0.0, 5), 0.0);
+    });
+
+    test('7-point feature raw 3.0 (max 6) → 5.0', () {
+      expect(normalizeMeanTo10(3.0, 7), 5.0);
+    });
+
+    test('off-by-one guard: max is scaleLength-1', () {
+      // 3.1 on 0-4 (78%) → 7.75; NOT (3.1/5)*10 = 6.2
+      expect(normalizeMeanTo10(3.1, 5), closeTo(7.75, 1e-9));
+    });
+
+    test('returns null for booleans/checkboxes and null input', () {
+      expect(normalizeMeanTo10(4.0, 2), isNull); // switch
+      expect(normalizeMeanTo10(1.0, 1), isNull); // checkbox
+      expect(normalizeMeanTo10(null, 5), isNull);
+    });
+  });
+
+  group('featureFrequency (spec Phase 9b)', () {
+    final medication =
+        allFeatures.firstWhere((f) => f.key == 'medicationTaken');
+    final workday = allFeatures.firstWhere((f) => f.key == 'workdayFlag');
+
+    DailyEntry boolEntry(String date, int? med, int? work) => DailyEntry(
+          date: date,
+          sleepRating: null,
+          medicationTaken: med,
+          workdayFlag: work,
+          updatedAt: 0,
+        );
+
+    test('counts ones over logged days in the window', () {
+      // 3 logged days, 2 with medication=1
+      final slots = buildSlots([
+        boolEntry(dateKeyForDaysAgo(0), 1, null),
+        boolEntry(dateKeyForDaysAgo(1), 0, null),
+        boolEntry(dateKeyForDaysAgo(2), 1, null),
+      ]);
+
+      final f = featureFrequency(slots, medication, 7);
+
+      expect(f, isNotNull);
+      expect(f!.ones, 2);
+      expect(f.logged, 3);
+    });
+
+    test('excludes gaps and unlogged values from the denominator', () {
+      // today med=1, 2 days ago med=null (logged but no value) → only today counts
+      final slots = buildSlots([
+        boolEntry(dateKeyForDaysAgo(0), 1, null),
+        boolEntry(dateKeyForDaysAgo(1), null, null),
+        boolEntry(dateKeyForDaysAgo(2), 0, null),
+      ]);
+
+      final f = featureFrequency(slots, medication, 7);
+
+      expect(f, isNotNull);
+      expect(f!.ones, 1);
+      expect(f.logged, 2); // value-null day excluded
+    });
+
+    test('returns null when the window has no logged days', () {
+      final slots = buildSlots([
+        boolEntry(dateKeyForDaysAgo(10), 1, null), // outside 7-day window
+      ]);
+
+      expect(featureFrequency(slots, medication, 7), isNull);
+      expect(featureFrequency(slots, workday, 7), isNull);
+    });
+  });
 }

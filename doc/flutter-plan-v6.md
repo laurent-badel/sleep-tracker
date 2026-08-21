@@ -408,16 +408,18 @@ String featureHighCaption(AppLocalizations l, String key) => switch (key) {
 
 ### Shared widget: `EntryEditorForm`
 
-Contract (`date`, `initial`, `onSave`, `onSaved`) is **unchanged**. Internals:
+Contract (`date`, `initial`, `onSave`, `onSaved`, **plus optional `onCancel` since Phase 9**) is otherwise unchanged. Internals:
 - `State` holds `Map<String, int> ratings` instead of four named ints.
 - Seeded in `initState` by iterating **enabled** `FeatureDef`s and pulling each value via `getFeatureValue(initial, key) ?? 0`.
 - Renders one `RatingPicker` per enabled `FeatureDef`, in catalog order; **labels/captions resolved at build time** via `final l = AppLocalizations.of(context);` + the `feature_strings` bridge (widget layer only, per §0).
 - Save: clamps each rating to `scaleLength - 1`, builds the companion via `buildEntryCompanion`, and calls `onSave`.
-- Save button label comes from ARB (`todaySave`).
+- Save button label comes from ARB (`todaySave`); when `onCancel` is non-null, a `TextButton` (`cancel` ARB key) renders beside Save — Today passes it on the Edit path, History omits it (dismiss = pop).
 
 ### `RatingPicker` — generalized by `scaleLength`
 
-Unchanged from v8 — it receives plain strings (`label`, `lowCaption`, `highCaption`) and therefore stays localization-agnostic. Callers pass localized strings. Numeric tooltips `'$i'` are universal; keep them.
+It receives plain strings (`label`, `lowCaption`, `highCaption`) and therefore stays localization-agnostic. Callers pass localized strings. Tooltips `'$label $i'` are per-widget; keep them.
+
+**Scale branch (≥3) is **yellow stars** since Phase 9** (frozen): `i <= value` fill kept — with stars this maps onto the universal 1–5-star convention (worst = 1 star, best = all stars; 0 stays visibly marked). `Colors.amber` for filled stars is the **single documented exception** to the no-hardcoded-colors rule; empty stars use `colorScheme.onSurfaceVariant`. The star row uses `Row` + `Expanded` cells (not `Wrap`) so it always spans the same width as the caption row — captions anchor under the scale endpoints at any width — inside a `ConstrainedBox(maxWidth: 480)` + `Center` for large screens. Checkbox (`1`) and switch (`2`) branches unchanged.
 
 <CODE lang="dart">
 class RatingPicker extends StatelessWidget {
@@ -451,23 +453,32 @@ class RatingPicker extends StatelessWidget {
         onChanged: (v) => onChanged(v ? 1 : 0),
       );
     }
-    // Original circle-row picker for scaleLength >= 3
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: Theme.of(context).textTheme.labelLarge),
-        Wrap(
-          children: List.generate(scaleLength, (i) => IconButton(
-            tooltip: '$i',
-            icon: Icon(i <= value ? Icons.circle : Icons.circle_outlined),
-            onPressed: () => onChanged(i),
-          )),
-        ),
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text(lowCaption, style: Theme.of(context).textTheme.bodySmall),
-          Text(highCaption, style: Theme.of(context).textTheme.bodySmall),
-        ]),
-      ],
+    // Star picker for scaleLength >= 3 (Phase 9): Row+Expanded spans the row,
+    // captions row matches its width; amber stars are the color exception.
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: Theme.of(context).textTheme.labelLarge),
+            Row(
+              children: List.generate(scaleLength, (i) => Expanded(
+                child: IconButton(
+                  tooltip: '$label $i',
+                  icon: Icon(
+                    i <= value ? Icons.star : Icons.star_border,
+                    color: i <= value ? Colors.amber : Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  onPressed: () => onChanged(i),
+                ),
+              )),
+            ),
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              Text(lowCaption, style: Theme.of(context).textTheme.bodySmall),
+              Text(highCaption, style: Theme.of(context).textTheme.bodySmall),
+            ]),
+          ],
     );
   }
 }
@@ -709,6 +720,312 @@ Changing the in-app language updates the UI instantly, but the OS caches the sch
 - Selecting "System Default" restores device-locale following.
 - The choice persists across app restarts via `selected_language`.
 - After a language change, the next scheduled reminder fires with title/body in the newly selected language (confirms the reschedule-on-change path).
+
+### Addendum: UI Polish — Star Scale, Alignment, Today "Caught Up" State (Phase 9)
+
+> Integration notes — this addendum amends: the §0 theme bullet (one documented color exception), the §3 `RatingPicker` paragraph + scale branch (stars, `Row`+`Expanded` replaces `Wrap`), the §3 `EntryEditorForm` contract (optional `onCancel`), the §3 Today screen body (three-state), the §3 History row (shared summary builder), and §6 (Phase 9 + acceptance criteria).
+
+**Design decisions (frozen):**
+- The ordinal scale renders as **yellow stars**, not white dots. `i <= value` fill semantics are **kept**: with stars they map onto the universal 1–5 star convention (worst = 1 star, best = all stars), and a rating of 0 stays visibly marked. The earlier "do not change to `i < value`" freeze therefore survives the icon swap unchanged.
+- `Colors.amber` for filled stars is the **single documented exception** to the "no hardcoded colors" rule — stars are semantically yellow and amber reads correctly on both light and dark themes. Empty stars use `colorScheme.onSurfaceVariant`.
+- The dot/star row and the caption row must always share the same width, so captions anchor under the scale's endpoints at any screen width or orientation.
+- Today shows a **"caught up" card** when an entry for today exists, with an **Edit** button (confirmed wanted). First-time logging (no entry) still shows the form directly.
+
+#### `RatingPicker` — scale branch rewrite (`scaleLength >= 3`)
+
+**Why the old layout broke:** `Wrap` shrink-wraps to the stars' natural width while the caption `Row` (`spaceBetween`) expands to the full available width — two different widths, so on wide/landscape screens the captions visibly detach from the scale. Fix: give both rows the same width by making the scale *span* its row (`Row` + `Expanded` cells), and cap the picker's width on large screens (`ConstrainedBox` + `Center`). `Wrap` is no longer needed: `Expanded` cells shrink gracefully on narrow phones (tap targets dip slightly below 48dp only on the narrowest devices with 6–7-point scales — acceptable for a dense scale). Checkbox (`scaleLength == 1`) and switch (`== 2`) branches are unchanged.
+
+<CODE lang="dart">
+// scale branch (scaleLength >= 3)
+final theme = Theme.of(context);
+const Color starFilled = Colors.amber; // documented exception (see decisions above)
+final Color starEmpty = theme.colorScheme.onSurfaceVariant;
+
+return Center(
+  child: ConstrainedBox(
+    constraints: const BoxConstraints(maxWidth: 480),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: theme.textTheme.labelLarge),
+        Row(
+          children: List.generate(scaleLength, (i) => Expanded(
+            child: IconButton(
+              tooltip: '$i',
+              icon: Icon(
+                i <= value ? Icons.star : Icons.star_border,
+                color: i <= value ? starFilled : starEmpty,
+              ),
+              onPressed: () => onChanged(i),
+            ),
+          )),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(lowCaption, style: theme.textTheme.bodySmall),
+            Text(highCaption, style: theme.textTheme.bodySmall),
+          ],
+        ),
+      ],
+    ),
+  ),
+);
+</CODE>
+
+On phones narrower than 480dp the `ConstrainedBox` is a no-op (identical to before); in landscape/tablet the scale and captions stay together, centered, instead of stretching edge-to-edge.
+
+#### Shared entry summary builder
+
+Extract the History row's compact summary into one shared helper so the History rows and the new caught-up card can't drift apart: `ui/widgets/entry_summary.dart` exposing `String entrySummaryLine(DailyEntry entry, List<FeatureDef> enabled, AppLocalizations l)` (localized `featureLabel(l, key): value` pairs for enabled features, same separator as the current History row). History rows switch to this helper.
+
+#### `EntryEditorForm` — optional cancel
+
+Add an optional `VoidCallback? onCancel` to the contract (backward-compatible). When non-null, render a Cancel `TextButton` (ARB key `cancel`) beside Save. The History bottom sheet does not pass it (dismiss = pop); Today passes it on the Edit path.
+
+#### Today screen — three-state body
+
+<CODE lang="dart">
+// today_screen.dart
+bool _editing = false;
+
+Widget _buildBody(TodayViewModel vm, DailyRepository repo, AppLocalizations l) {
+  if (!vm.loaded) {
+    return const Center(child: CircularProgressIndicator());
+  }
+  if (vm.currentEntry != null && !_editing) {
+    return _CaughtUpCard(
+      entry: vm.currentEntry!,
+      onEdit: () => setState(() => _editing = true),
+    );
+  }
+  return EntryEditorForm(
+    key: ValueKey(vm.today),
+    date: vm.today,
+    initial: vm.currentEntry,   // null → blank form; non-null → Edit path seeds from existing
+    onSave: repo.upsert,
+    onCancel: vm.currentEntry != null
+        ? () => setState(() => _editing = false)
+        : null,                 // nothing to return to on first-time logging
+    onSaved: () {
+      setState(() => _editing = false);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l.todaySaved)));
+    },
+  );
+}
+</CODE>
+
+<CODE lang="dart">
+class _CaughtUpCard extends StatelessWidget {
+  final DailyEntry entry;
+  final VoidCallback onEdit;
+
+  const _CaughtUpCard({required this.entry, required this.onEdit});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.task_alt, size: 48, color: theme.colorScheme.primary),
+            const SizedBox(height: 12),
+            Text(l.todayCaughtUp, style: theme.textMiddlewareTextTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(entrySummaryLine(entry, enabledFeatures, l),
+                style: theme.textTheme.bodySmall),
+            const SizedBox(height: 12),
+            TextButton(onPressed: onEdit, child: Text(l.todayEdit)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+</CODE>
+
+Behavior loop: save → stream emits non-null entry → card appears (and `_editing` resets). Midnight rollover → `currentEntry` resets to null → blank form reappears automatically, even if `_editing` was left true. The card's summary is live-derived from the stream, so edits made from History are reflected on Today without opening the form. The previously documented stale-input edge case now only applies while the user is actively in the Edit form — unchanged, accepted.
+
+#### i18n keys (all five locales, `untranslated.txt` gate applies)
+
+- `todayCaughtUp` — "You're all caught up for today."
+- `todayEdit` — "Edit entry"
+- `cancel` — "Cancel"
+
+#### Build order — Phase 9
+
+1. Extract `entrySummaryLine`; rewire History rows to it.
+2. `RatingPicker` star/row/constraint refactor (scale branch only).
+3. `EntryEditorForm` optional `onCancel`.
+4. Today three-state body + `_CaughtUpCard`.
+5. ARB keys ×5 locales.
+
+#### Acceptance criteria (additions)
+
+- Stars: rating 0 renders one filled star; max rating renders all filled; empty stars are outlined and muted.
+- Caption alignment: "low"/"high" captions sit under the first/last star in portrait, landscape, and with 5-, 6-, and 7-point scales — no detached captions at any width.
+- Today with a saved entry shows the caught-up card with a correct live summary; **Edit** opens the form pre-filled from the existing entry; **Save** returns to the card with a snackbar; **Cancel** returns without saving.
+- Today with no entry still shows the blank form with no Edit/Cancel affordance.
+- Leaving the app open across midnight from the caught-up state shows the blank form for the new day within ~60s.
+- `untranslated.txt` remains empty after adding the three new keys.
+
+### Addendum: Stats Score Normalization to a Common 0–10 Scale (Phase 9b)
+
+> Integration notes — this addendum amends: §3 Stats Screen (averages row + chart axis), the existing `FeatureDef.scaleLength` usage, and the i18n averages-row key. It does **not** introduce a new metric type — it builds on the existing `FeatureDef` catalog from Phase 6 and the `feature_strings` bridge from Phase 7.
+
+**Design decisions (frozen):**
+- **Source of truth for scale:** `FeatureDef.scaleLength` (already exists). Max value = `scaleLength - 1`. No new enum, no parallel config. A new 7-point metric added later automatically normalizes correctly.
+- **Scope of normalization:** applied only to **ordinal features with `scaleLength >= 3`**. Boolean/checkbox features (`scaleLength <= 2`) are **excluded** — "7.5 / 10 sleep" and "8 / 10 days took medication" are different kinds of numbers and don't belong in the same score list. Booleans keep their current rendering (switch in the form, icon row in charts, raw 0/1 values in Stats).
+- **Normalization formula:** `normalized = (rawMean / (scaleLength - 1)) * 10.0`. A perfect mean on any ordinal scale always reads 10.0 / 10; a zero mean reads 0.0 / 10.
+- **Display format:** locale-aware via `NumberFormat.decimalPattern(localeTag)`, one decimal place. `"${formatted} / 10"`. The `" / 10"` suffix is a separate ARB placeholder-bearing message so localizers can adjust spacing/order if needed.
+- **No-data case:** shows `"—"` alone (no `"/ 10"` suffix), consistent with the existing gap-handling rule in the v9 spec.
+- **Streak calculation unchanged** — it counts presence of any entry, not values.
+
+#### Why normalization
+
+The configurable catalog (Phase 6) lets users mix 5-point, 6-point, and 7-point ordinal scales in the same app. Raw means aren't comparable across these: a `3.1` on a 0–4 scale is 78% of max; a `3.1` on a 0–6 scale is 44%. Normalizing to a shared 0–10 range makes the averages row of each Stats card meaningful at a glance — `7.8 / 10` vs `4.4 / 10` reads as intended.
+
+#### Implementation — `StatsViewModel`
+
+Add a single helper; apply it inside the existing per-feature averages loop. **Skip the normalization entirely for `scaleLength <= 2`** — for those features, render the frequency/count form (e.g., "12 / 30 days") instead of a normalized score. The ViewModel already branches on `scaleLength` for chart rendering; extend the same branch.
+
+<CODE lang="dart">
+double? normalizeMeanTo10(double rawMean, int scaleLength) {
+  if (scaleLength <= 2) return null;           // excluded from 0–10 scoring
+  final max = scaleLength - 1;
+  if (max <= 0) return null;
+  return (rawMean / max) * 10.0;
+}
+</CODE>
+
+Per-feature, the existing stats loop now produces one of:
+
+| `scaleLength` | Averages row rendering |
+|---|---|
+| `>= 3` (ordinal) | `${formatted(normalizeMeanTo10(raw, scaleLength))} / 10` per window (7d / 30d) |
+| `== 2` (switch/boolean) | `${daysWith1} / ${daysInWindow}` (raw frequency, e.g., "22 / 30 days") |
+| `== 1` (checkbox) | same frequency form as `== 2` |
+
+When either window has no data, that half renders `"—"` without the `"/ 10"` suffix — same rule already in the v9 spec.
+
+#### Implementation — Chart painter
+
+The painter already uses `rating / (scaleLength - 1) * availableHeight` — it's implicitly on a 0–1 range. Make this explicit and extend to a labeled 0–10 axis for ordinal features:
+
+<CODE lang="dart">
+class MetricChartPainter extends CustomPainter {
+  MetricChartPainter({
+    required this.slots,
+    required this.ratingOf,
+    required this.scaleLength,
+    required this.filledColor,
+    required this.gapColor,
+    required this.axisLabelColor,
+    required this.axisLabelStyle,
+  });
+
+  final List<DailyEntry?> slots;
+  final int Function(DailyEntry) ratingOf;
+  final int scaleLength;
+  final Color filledColor;
+  final Color gapColor;
+  final Color axisLabelColor;
+  final TextStyle axisLabelStyle;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (scaleLength <= 2) {
+      // Keep the existing icon-row rendering for booleans/checkboxes
+      // (no 0–10 axis — the concept doesn't apply).
+      return _paintIconRow(canvas, size);
+    }
+
+    final max = scaleLength - 1;
+    // Reserve small margin for axis labels
+    const leftMargin = 24.0;
+    const bottomMargin = 16.0;
+    final chartArea = Rect.fromLTWH(
+      leftMargin, 0,
+      size.width - leftMargin,
+      size.height - bottomMargin,
+    );
+
+    // Draw 0, 5, 10 axis ticks (left side)
+    final tp0 = (TextPainter(
+        text: TextSpan(text: '0', style: axisLabelStyle),
+        textDirection: TextDirection.ltr)..layout());
+    final tp5 = (TextPainter(
+        text: TextSpan(text: '5', style: axisLabelStyle),
+        textDirection: TextDirection.ltr)..layout());
+    final tp10 = (TextPainter(
+        text: TextSpan(text: '10', style: axisLabelStyle),
+        textDirection: TextDirection.ltr)..layout());
+    tp0.paint(canvas, Offset(0, chartArea.bottom - tp0.height / 2));
+    tp5.paint(canvas, Offset(0, chartArea.center.dy - tp5.height / 2));
+    tp10.paint(canvas, Offset(0, chartArea.top - tp10.height / 2));
+
+    // Bar height = normalized score / 10 * chartArea.height
+    final barWidth = chartArea.width / slots.length;
+    for (var i = 0; i < slots.length; i++) {
+      final e = slots[i];
+      final x = chartArea.left + i * barWidth;
+      final Paint paint;
+      final double h;
+      if (e == null) {
+        paint = Paint()..color = gapColor;
+        h = 4.0;                                 // short stub for missing days
+      } else {
+        paint = Paint()..color = filledColor;
+        final normalized = (ratingOf(e) / max) * 10.0;
+        h = (normalized / 10.0) * chartArea.height;
+      }
+      canvas.drawRect(
+        Rect.fromLTWH(x + 1, chartArea.bottom - h, barWidth - 2, h),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant MetricChartPainter old) =>
+      old.slots != slots || old.ratingOf != ratingOf ||
+      old.scaleLength != scaleLength || old.filledColor != filledColor ||
+      old.gapColor != gapColor || old.axisLabelColor != axisLabelColor;
+}
+</CODE>
+
+The ordinal chart now has explicit `0 / 5 / 10` tick labels on the left. Boolean/checkbox features keep their icon-row rendering (unchanged from v9).
+
+#### i18n keys (all five locales, `untranslated.txt` gate applies)
+
+Add one ARB message with a placeholder for the number:
+
+- `statsNormalizedAvg` — `{value} / 10` (ICU placeholder with metadata `{ "type": "String" }`). Localizers can rephrase spacing if needed; the `" / 10"` suffix is part of the message so it's translatable.
+- `statsFrequencyAvg` — `{days} / {total} days` for boolean/checkbox features.
+
+Format the number with `NumberFormat.decimalPattern(localeTag).formatAsFixed(1)` (or the appropriate `intl` method for one decimal place) **before** passing it into the message. Never concatenate a raw `.toStringAsFixed(1)` into localized text — it produces the wrong decimal separator in de/fr/it.
+
+#### Build order — Phase 9b
+
+1. Add `normalizeMeanTo10` helper; branch the averages loop on `scaleLength`.
+2. Add the two new ARB keys ×5 locales; format via `NumberFormat` per the i18n rules.
+3. Extend `MetricChartPainter` with the 0/5/10 axis for ordinal features; keep icon-row branch for `scaleLength <= 2`.
+4. Verify: `flutter gen-l10n` clean, `untranslated.txt` empty.
+
+#### Acceptance criteria (additions)
+
+- A perfect mean on a 5-point scale (raw 4.0 on values 0–4) normalizes to **10.0 / 10**; a zero mean to **0.0 / 10**. (Regression check for the off-by-one: max is `scaleLength - 1`, not `scaleLength`.)
+- A 7-point feature (e.g., mood) with raw mean 3.0 displays as **5.0 / 10** — directly comparable to a 5-point feature at the same percentile.
+- Boolean features (`medicationTaken`, `workdayFlag`) display as **"N / M days"**, not normalized scores.
+- Ordinal feature charts have visible 0/5/10 axis ticks; boolean feature charts render as icon rows (no 0–10 axis).
+- Switching device locale to `de` renders `"7,8 / 10"` (comma decimal separator) rather than `"7.8 / 10"`.
+- Windows with no data still show `"—"` (no stray `"/ 10"` suffix).
+- Streak calculation is unchanged (counts any-entry days, ignores values).
 
 ### Acceptance Criteria
 

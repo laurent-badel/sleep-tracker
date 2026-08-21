@@ -25,6 +25,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get todaySaved => '保存しました';
 
   @override
+  String get todayCaughtUp => '今日の記録は完了しています。';
+
+  @override
+  String get todayEdit => '記録を編集';
+
+  @override
+  String get cancel => 'キャンセル';
+
+  @override
   String get metricsHeader => '指標';
 
   @override
@@ -62,6 +71,16 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String statsAverages(String avg7, String avg30) {
     return '7日平均：$avg7 · 30日平均：$avg30';
+  }
+
+  @override
+  String statsNormalizedAvg(String value) {
+    return '$value / 10';
+  }
+
+  @override
+  String statsFrequencyAvg(String days, String total) {
+    return '$days / $total日';
   }
 
   @override
@@ -111,7 +130,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get notifTitle => '毎日のチェックイン';
 
   @override
-  String get notifBody => '睡眠、運動、ストレス、スクリーンタイムを記録しましょう。';
+  String get notifBody => '毎日のデータを記録するのを忘れずに！';
 
   @override
   String get notifChannelName => '毎日のリマインダー';

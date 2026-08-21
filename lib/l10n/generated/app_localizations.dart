@@ -134,6 +134,24 @@ abstract class AppLocalizations {
   /// **'Saved'**
   String get todaySaved;
 
+  /// No description provided for @todayCaughtUp.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re all caught up for today.'**
+  String get todayCaughtUp;
+
+  /// No description provided for @todayEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit entry'**
+  String get todayEdit;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
   /// No description provided for @metricsHeader.
   ///
   /// In en, this message translates to:
@@ -193,6 +211,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'7-day avg: {avg7} · 30-day avg: {avg30}'**
   String statsAverages(String avg7, String avg30);
+
+  /// Normalized 0-10 score for ordinal features (Phase 9b). {value} is pre-formatted with one decimal.
+  ///
+  /// In en, this message translates to:
+  /// **'{value} / 10'**
+  String statsNormalizedAvg(String value);
+
+  /// Raw frequency for boolean/checkbox features (Phase 9b), e.g. 22 / 30 days.
+  ///
+  /// In en, this message translates to:
+  /// **'{days} / {total} days'**
+  String statsFrequencyAvg(String days, String total);
 
   /// No description provided for @settingsTitle.
   ///
@@ -287,7 +317,7 @@ abstract class AppLocalizations {
   /// No description provided for @notifBody.
   ///
   /// In en, this message translates to:
-  /// **'Log your sleep, exercise, stress, and screen time.'**
+  /// **'Don\'t forget to log your daily data!'**
   String get notifBody;
 
   /// No description provided for @notifChannelName.

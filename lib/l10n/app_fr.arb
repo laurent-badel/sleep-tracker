@@ -9,6 +9,9 @@
 
   "todaySettingsTooltip": "Réglages",
   "todaySaved": "Enregistré",
+  "todayCaughtUp": "Vous êtes à jour pour aujourd'hui.",
+  "todayEdit": "Modifier l'entrée",
+  "cancel": "Annuler",
 
   "metricsHeader": "Mesures",
   "noteLabel": "Note (facultatif)",
@@ -22,6 +25,8 @@
   "streakStartHint": "Enregistrez un jour pour commencer une série",
   "streakKeepGoing": "Continuez !",
   "statsAverages": "Moy. 7 jours : {avg7} · Moy. 30 jours : {avg30}",
+  "statsNormalizedAvg": "{value} / 10",
+  "statsFrequencyAvg": "{days} / {total} jours",
 
   "settingsTitle": "Réglages",
   "settingsReminder": "Rappel quotidien",
@@ -40,7 +45,7 @@
   "languageIt": "Italiano",
 
   "notifTitle": "Enregistrement quotidien",
-  "notifBody": "Notez votre sommeil, exercice, stress et temps d'écran.",
+  "notifBody": "N'oubliez pas d'enregistrer vos données quotidiennes !",
   "notifChannelName": "Rappel quotidien",
   "notifChannelDescription": "Rappel quotidien pour enregistrer votre journée",
 

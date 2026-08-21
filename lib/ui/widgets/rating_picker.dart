@@ -4,12 +4,16 @@ import 'package:flutter/material.dart';
 /// [scaleLength]:
 /// - `1` → `CheckboxListTile`
 /// - `2` → `SwitchListTile`
-/// - `>=3` → the circle-row picker (0 .. scaleLength-1) in a `Wrap` — a plain
-///   `Row` can overflow narrow phones once tap targets are counted.
+/// - `>=3` → the star picker (0 .. scaleLength-1). `Row` + `Expanded` cells
+///   span the row so the caption row always matches its width — the old
+///   `Wrap` shrink-wrapped while the captions expanded, detaching them on
+///   wide/landscape screens. `ConstrainedBox` caps the width on large screens.
 ///
-/// Circle-row fill semantics are **frozen**: `i <= value` means value 0 shows
-/// one filled circle — the filled circle marks the selected value, including
-/// 0. Do not "fix" it to `i < value`.
+/// Star fill semantics are **frozen**: `i <= value` means a rating of 0 shows
+/// one filled star (the universal 1–5-star convention — worst = 1 star, best =
+/// all stars) — do not "fix" it to `i < value`. `Colors.amber` for filled
+/// stars is the single documented exception to the "no hardcoded colors" rule
+/// (spec §0 / Phase 9); empty stars use `colorScheme.onSurfaceVariant`.
 class RatingPicker extends StatelessWidget {
   final String label;
   final String lowCaption; // e.g. 'none'
@@ -45,33 +49,46 @@ class RatingPicker extends StatelessWidget {
         onChanged: (v) => onChanged(v ? 1 : 0),
       );
     }
-    // Original circle-row picker for scaleLength >= 3.
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: Theme.of(context).textTheme.labelLarge),
-        Wrap(
-          children: List.generate(
-            scaleLength,
-            (i) => IconButton(
-              // Include the metric label so TalkBack doesn't read six
-              // identical bare numbers (spec §3 accessibility requirement).
-              tooltip: '$label $i',
-              icon: Icon(
-                i <= value ? Icons.circle : Icons.circle_outlined,
-              ),
-              onPressed: () => onChanged(i),
-            ),
-          ),
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+    // Star picker for scaleLength >= 3 (spec Phase 9).
+    final theme = Theme.of(context);
+    const Color starFilled = Colors.amber; // documented exception (Phase 9)
+    final Color starEmpty = theme.colorScheme.onSurfaceVariant;
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(lowCaption, style: Theme.of(context).textTheme.bodySmall),
-            Text(highCaption, style: Theme.of(context).textTheme.bodySmall),
+            Text(label, style: theme.textTheme.labelLarge),
+            Row(
+              children: List.generate(
+                scaleLength,
+                (i) => Expanded(
+                  child: IconButton(
+                    // Include the metric label so TalkBack doesn't read N
+                    // identical bare numbers (spec §3 accessibility).
+                    tooltip: '$label $i',
+                    icon: Icon(
+                      i <= value ? Icons.star : Icons.star_border,
+                      color: i <= value ? starFilled : starEmpty,
+                    ),
+                    onPressed: () => onChanged(i),
+                  ),
+                ),
+              ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(lowCaption, style: theme.textTheme.bodySmall),
+                Text(highCaption, style: theme.textTheme.bodySmall),
+              ],
+            ),
           ],
         ),
-      ],
+      ),
     );
   }
 }

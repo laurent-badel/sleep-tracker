@@ -45,6 +45,8 @@ class StatsScreen extends StatelessWidget {
                         slots: vm.slots[f.key]!,
                         avg7: vm.avg7[f.key],
                         avg30: vm.avg30[f.key],
+                        freq7: vm.freq7[f.key],
+                        freq30: vm.freq30[f.key],
                       ),
                       const SizedBox(height: 12),
                     ],
@@ -89,18 +91,39 @@ class _FeatureCard extends StatelessWidget {
     required this.slots,
     required this.avg7,
     required this.avg30,
+    required this.freq7,
+    required this.freq30,
   });
 
   final FeatureDef feature;
   final List<DailyEntry?> slots;
   final double? avg7;
   final double? avg30;
+  final ({int ones, int logged})? freq7;
+  final ({int ones, int logged})? freq30;
 
   // Locale-aware one-decimal formatting (e.g. "4,0" in de/fr, "4.0" in en).
-  String _fmt(BuildContext context, double? v) {
-    if (v == null) return '—';
-    return NumberFormat('0.0', Localizations.localeOf(context).toLanguageTag())
-        .format(v);
+  String _fmt(BuildContext context, double v) =>
+      NumberFormat('0.0', Localizations.localeOf(context).toLanguageTag())
+          .format(v);
+
+  /// One window's display value (spec Phase 9b):
+  /// - ordinal (>=3): normalized 0–10 score via `{value} / 10`
+  /// - boolean (<=2): raw frequency via `{days} / {total} days`
+  /// - no data in either case: `—` alone (no suffix)
+  String _windowValue(
+    BuildContext context,
+    AppLocalizations l10n,
+    double? raw,
+    ({int ones, int logged})? freq,
+  ) {
+    if (feature.scaleLength >= 3) {
+      final norm = normalizeMeanTo10(raw, feature.scaleLength);
+      if (norm == null) return '—';
+      return l10n.statsNormalizedAvg(_fmt(context, norm));
+    }
+    if (freq == null) return '—';
+    return l10n.statsFrequencyAvg('${freq.ones}', '${freq.logged}');
   }
 
   @override
@@ -127,6 +150,9 @@ class _FeatureCard extends StatelessWidget {
                     scaleLength: feature.scaleLength,
                     filledColor: theme.colorScheme.primary,
                     gapColor: theme.colorScheme.surfaceContainerHighest,
+                    axisLabelColor: theme.colorScheme.onSurfaceVariant,
+                    axisLabelStyle: theme.textTheme.labelSmall ??
+                        const TextStyle(fontSize: 10),
                   ),
                 ),
               )
@@ -140,8 +166,8 @@ class _FeatureCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               l10n.statsAverages(
-                _fmt(context, avg7),
-                _fmt(context, avg30),
+                _windowValue(context, l10n, avg7, freq7),
+                _windowValue(context, l10n, avg30, freq30),
               ),
               style: theme.textTheme.bodySmall,
             ),

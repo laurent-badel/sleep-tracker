@@ -25,6 +25,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todaySaved => 'Saved';
 
   @override
+  String get todayCaughtUp => 'You\'re all caught up for today.';
+
+  @override
+  String get todayEdit => 'Edit entry';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
   String get metricsHeader => 'Metrics';
 
   @override
@@ -63,6 +72,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String statsAverages(String avg7, String avg30) {
     return '7-day avg: $avg7 · 30-day avg: $avg30';
+  }
+
+  @override
+  String statsNormalizedAvg(String value) {
+    return '$value / 10';
+  }
+
+  @override
+  String statsFrequencyAvg(String days, String total) {
+    return '$days / $total days';
   }
 
   @override
@@ -113,7 +132,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notifTitle => 'Daily check-in';
 
   @override
-  String get notifBody => 'Log your sleep, exercise, stress, and screen time.';
+  String get notifBody => 'Don\'t forget to log your daily data!';
 
   @override
   String get notifChannelName => 'Daily reminder';

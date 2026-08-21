@@ -25,6 +25,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get todaySaved => 'Enregistré';
 
   @override
+  String get todayCaughtUp => 'Vous êtes à jour pour aujourd\'hui.';
+
+  @override
+  String get todayEdit => 'Modifier l\'entrée';
+
+  @override
+  String get cancel => 'Annuler';
+
+  @override
   String get metricsHeader => 'Mesures';
 
   @override
@@ -64,6 +73,16 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String statsAverages(String avg7, String avg30) {
     return 'Moy. 7 jours : $avg7 · Moy. 30 jours : $avg30';
+  }
+
+  @override
+  String statsNormalizedAvg(String value) {
+    return '$value / 10';
+  }
+
+  @override
+  String statsFrequencyAvg(String days, String total) {
+    return '$days / $total jours';
   }
 
   @override
@@ -116,7 +135,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get notifBody =>
-      'Notez votre sommeil, exercice, stress et temps d\'écran.';
+      'N\'oubliez pas d\'enregistrer vos données quotidiennes !';
 
   @override
   String get notifChannelName => 'Rappel quotidien';

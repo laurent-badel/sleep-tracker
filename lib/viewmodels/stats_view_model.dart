@@ -25,6 +25,42 @@ double? averageOf(List<DailyEntry?> slots, FeatureDef feature, int window) {
   return values.reduce((a, b) => a + b) / values.length;
 }
 
+/// Normalizes a raw mean (0..scaleLength-1) to a shared 0–10 score so ordinal
+/// features of different scales are comparable at a glance (spec Phase 9b).
+/// Returns null for non-ordinal features (`scaleLength <= 2`) or null input.
+/// Off-by-one guard: max is `scaleLength - 1`, not `scaleLength`.
+double? normalizeMeanTo10(double? rawMean, int scaleLength) {
+  if (rawMean == null || scaleLength <= 2) return null;
+  final max = scaleLength - 1;
+  if (max <= 0) return null;
+  return (rawMean / max) * 10.0;
+}
+
+/// Frequency of a boolean/checkbox feature over the last [window] days: number
+/// of logged days with value 1 out of logged days (gaps and value-null days
+/// excluded, matching the averages rule). Returns null when the window has no
+/// logged days.
+({int ones, int logged})? featureFrequency(
+  List<DailyEntry?> slots,
+  FeatureDef feature,
+  int window,
+) {
+  final start = slots.length - window;
+  var ones = 0, logged = 0;
+  for (var i = start < 0 ? 0 : start; i < slots.length; i++) {
+    final e = slots[i];
+    if (e != null) {
+      final v = feature.getValue(e);
+      if (v != null) {
+        logged++;
+        if (v == 1) ones++;
+      }
+    }
+  }
+  if (logged == 0) return null;
+  return (ones: ones, logged: logged);
+}
+
 /// Builds the chart slots: a fixed-length list (default 30) in **ascending**
 /// order — index 0 is [days]-1 days ago, index `days-1` is today; null = a day
 /// with no entry (spec §3, view-layer logic: Drift only returns rows that exist).
@@ -73,8 +109,12 @@ class StatsViewModel extends ChangeNotifier {
   int? streak; // null → "—" (spec §3)
   List<FeatureDef> features = const [];
   Map<String, List<DailyEntry?>> slots = const {}; // feature key → slots
-  Map<String, double?> avg7 = const {};
+  Map<String, double?> avg7 = const {}; // raw means (ordinal)
   Map<String, double?> avg30 = const {};
+  // Raw frequency for boolean/checkbox features (spec Phase 9b): null when the
+  // window has no logged days.
+  Map<String, ({int ones, int logged})?> freq7 = const {};
+  Map<String, ({int ones, int logged})?> freq30 = const {};
 
   void _recompute() {
     loaded = true;
@@ -90,6 +130,12 @@ class StatsViewModel extends ChangeNotifier {
     };
     avg30 = {
       for (final f in features) f.key: averageOf(slots[f.key]!, f, 30),
+    };
+    freq7 = {
+      for (final f in features) f.key: featureFrequency(slots[f.key]!, f, 7),
+    };
+    freq30 = {
+      for (final f in features) f.key: featureFrequency(slots[f.key]!, f, 30),
     };
     notifyListeners();
   }

@@ -9,6 +9,9 @@
 
   "todaySettingsTooltip": "Einstellungen",
   "todaySaved": "Gespeichert",
+  "todayCaughtUp": "Du bist für heute auf dem neuesten Stand.",
+  "todayEdit": "Eintrag bearbeiten",
+  "cancel": "Abbrechen",
 
   "metricsHeader": "Kennzahlen",
   "noteLabel": "Notiz (optional)",
@@ -22,6 +25,8 @@
   "streakStartHint": "Erfasse einen Tag, um eine Serie zu starten",
   "streakKeepGoing": "Weiter so!",
   "statsAverages": "7-Tage-Ø: {avg7} · 30-Tage-Ø: {avg30}",
+  "statsNormalizedAvg": "{value} / 10",
+  "statsFrequencyAvg": "{days} / {total} Tage",
 
   "settingsTitle": "Einstellungen",
   "settingsReminder": "Tägliche Erinnerung",
@@ -40,7 +45,7 @@
   "languageIt": "Italiano",
 
   "notifTitle": "Täglicher Check-in",
-  "notifBody": "Erfasse Schlaf, Bewegung, Stress und Bildschirmzeit.",
+  "notifBody": "Vergiss nicht, deine täglichen Daten zu erfassen!",
   "notifChannelName": "Tägliche Erinnerung",
   "notifChannelDescription": "Tägliche Erinnerung zum Erfassen deines Tages",
 

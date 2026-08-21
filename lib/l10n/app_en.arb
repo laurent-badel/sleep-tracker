@@ -11,6 +11,9 @@
 
   "todaySettingsTooltip": "Settings",
   "todaySaved": "Saved",
+  "todayCaughtUp": "You're all caught up for today.",
+  "todayEdit": "Edit entry",
+  "cancel": "Cancel",
 
   "metricsHeader": "Metrics",
   "noteLabel": "Note (optional)",
@@ -43,6 +46,27 @@
       }
     }
   },
+  "statsNormalizedAvg": "{value} / 10",
+  "@statsNormalizedAvg": {
+    "description": "Normalized 0-10 score for ordinal features (Phase 9b). {value} is pre-formatted with one decimal.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "statsFrequencyAvg": "{days} / {total} days",
+  "@statsFrequencyAvg": {
+    "description": "Raw frequency for boolean/checkbox features (Phase 9b), e.g. 22 / 30 days.",
+    "placeholders": {
+      "days": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
 
   "settingsTitle": "Settings",
   "settingsReminder": "Daily reminder",
@@ -61,7 +85,7 @@
   "languageIt": "Italiano",
 
   "notifTitle": "Daily check-in",
-  "notifBody": "Log your sleep, exercise, stress, and screen time.",
+  "notifBody": "Don't forget to log your daily data!",
   "notifChannelName": "Daily reminder",
   "notifChannelDescription": "Once-daily reminder to log your day",
 

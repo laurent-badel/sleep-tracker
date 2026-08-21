@@ -9,6 +9,9 @@
 
   "todaySettingsTooltip": "設定",
   "todaySaved": "保存しました",
+  "todayCaughtUp": "今日の記録は完了しています。",
+  "todayEdit": "記録を編集",
+  "cancel": "キャンセル",
 
   "metricsHeader": "指標",
   "noteLabel": "メモ（任意）",
@@ -22,6 +25,8 @@
   "streakStartHint": "連続記録を始めるには1日記録しましょう",
   "streakKeepGoing": "この調子で！",
   "statsAverages": "7日平均：{avg7} · 30日平均：{avg30}",
+  "statsNormalizedAvg": "{value} / 10",
+  "statsFrequencyAvg": "{days} / {total}日",
 
   "settingsTitle": "設定",
   "settingsReminder": "毎日のリマインダー",
@@ -40,7 +45,7 @@
   "languageIt": "Italiano",
 
   "notifTitle": "毎日のチェックイン",
-  "notifBody": "睡眠、運動、ストレス、スクリーンタイムを記録しましょう。",
+  "notifBody": "毎日のデータを記録するのを忘れずに！",
   "notifChannelName": "毎日のリマインダー",
   "notifChannelDescription": "毎日その日の記録を促すリマインダー",
 

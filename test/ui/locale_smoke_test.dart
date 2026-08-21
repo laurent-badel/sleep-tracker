@@ -10,6 +10,7 @@ import 'package:sleep_tracker/data/daily_repository.dart';
 import 'package:sleep_tracker/data/database.dart';
 import 'package:sleep_tracker/l10n/generated/app_localizations.dart';
 import 'package:sleep_tracker/services/notification_service.dart';
+import 'package:sleep_tracker/utils/dates.dart';
 import 'package:sleep_tracker/utils/prefs.dart';
 import 'package:sleep_tracker/viewmodels/feature_settings_controller.dart';
 import 'package:sleep_tracker/viewmodels/stats_view_model.dart';
@@ -33,10 +34,12 @@ void main() {
       final db = AppDatabase.forTesting(NativeDatabase.memory());
       addTearDown(db.close);
       final repo = DailyRepository(db.dailyDao);
-      // Two entries so Stats isn't in the placeholder state.
+      // Two entries — today + yesterday — so Stats isn't in the placeholder
+      // state AND Today shows the caught-up card (dates must be relative to
+      // the real "now", not hardcoded).
       await repo.upsert(
         DailyEntriesCompanion(
-          date: Value('2026-08-20'),
+          date: Value(dateKeyForDaysAgo(0)),
           sleepRating: const Value(4),
           moodRating: const Value(3),
           updatedAt: Value(1),
@@ -44,7 +47,7 @@ void main() {
       );
       await repo.upsert(
         DailyEntriesCompanion(
-          date: Value('2026-08-21'),
+          date: Value(dateKeyForDaysAgo(1)),
           sleepRating: const Value(5),
           moodRating: const Value(4),
           updatedAt: Value(2),
@@ -76,9 +79,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Today tab renders the editor with the localized save + metrics header.
-      expect(find.text(l.saveButton), findsOneWidget);
-      expect(find.text(l.metricsHeader), findsOneWidget);
+      // Today tab: a saved entry for today means the caught-up card (with the
+      // localized Edit button) — not the form.
+      expect(find.text(l.todayCaughtUp), findsOneWidget);
+      expect(find.text(l.todayEdit), findsOneWidget);
 
       // Bottom-nav labels are present (localized per locale).
       expect(find.byType(NavigationBar), findsOneWidget);
