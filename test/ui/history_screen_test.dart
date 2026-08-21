@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:sleep_tracker/data/daily_repository.dart';
 import 'package:sleep_tracker/data/database.dart';
+import 'package:sleep_tracker/l10n/generated/app_localizations.dart';
 import 'package:sleep_tracker/ui/history_screen.dart';
 import 'package:sleep_tracker/viewmodels/feature_settings_controller.dart';
 
@@ -32,7 +33,11 @@ void main() {
           Provider.value(value: repo),
           ChangeNotifierProvider.value(value: featureSettings),
         ],
-        child: const MaterialApp(home: HistoryScreen()),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const HistoryScreen(),
+        ),
       ),
     );
     await tester.pumpAndSettle();

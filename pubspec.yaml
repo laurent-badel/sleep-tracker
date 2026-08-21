@@ -43,6 +43,8 @@ dependencies:
   provider: 6.1.5+1
   flutter_local_notifications: 22.3.0
   timezone: 0.11.1
+  flutter_localizations:
+    sdk: flutter
   flutter_timezone: 5.1.0
   shared_preferences: 2.5.5
 
@@ -71,6 +73,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # Phase 7 (i18n): run gen_l10n as part of every build/pub get.
+  generate: true
 
   # To add assets to your application, add an assets section, like this:
   # assets:

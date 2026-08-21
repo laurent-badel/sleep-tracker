@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../data/database.dart';
+import '../l10n/feature_strings.dart';
+import '../l10n/generated/app_localizations.dart';
 import '../models/feature_def.dart';
 import '../viewmodels/stats_view_model.dart';
 import 'widgets/metric_chart.dart';
@@ -15,17 +18,18 @@ class StatsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<StatsViewModel>();
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Stats')),
+      appBar: AppBar(title: Text(l10n.navStats)),
       body: !vm.loaded
           ? const Center(child: CircularProgressIndicator())
           : vm.entryCount < 2
-              ? const Center(
+              ? Center(
                   child: Padding(
-                    padding: EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(24),
                     child: Text(
-                      'Log at least two days to see your stats.',
+                      l10n.statsNotEnoughData,
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -58,6 +62,8 @@ class _StreakCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final s = streak; // local for null-promotion
     return Card(
       child: ListTile(
         leading: Icon(
@@ -65,13 +71,11 @@ class _StreakCard extends StatelessWidget {
           color: theme.colorScheme.primary,
         ),
         title: Text(
-          streak == null ? '—' : '$streak-day streak',
+          s == null ? '—' : l10n.streakDays(s),
           style: theme.textTheme.titleMedium,
         ),
         subtitle: Text(
-          streak == null
-              ? 'Log a day to start a streak'
-              : 'Keep it going!',
+          s == null ? l10n.streakStartHint : l10n.streakKeepGoing,
           style: theme.textTheme.bodySmall,
         ),
       ),
@@ -92,18 +96,25 @@ class _FeatureCard extends StatelessWidget {
   final double? avg7;
   final double? avg30;
 
-  String _fmt(double? v) => v == null ? '—' : v.toStringAsFixed(1);
+  // Locale-aware one-decimal formatting (e.g. "4,0" in de/fr, "4.0" in en).
+  String _fmt(BuildContext context, double? v) {
+    if (v == null) return '—';
+    return NumberFormat('0.0', Localizations.localeOf(context).toLanguageTag())
+        .format(v);
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(feature.label, style: theme.textTheme.titleMedium),
+            Text(featureLabel(l10n, feature.key),
+                style: theme.textTheme.titleMedium),
             const SizedBox(height: 12),
             if (feature.scaleLength >= 3)
               SizedBox(
@@ -128,7 +139,10 @@ class _FeatureCard extends StatelessWidget {
               ),
             const SizedBox(height: 8),
             Text(
-              '7-day avg: ${_fmt(avg7)} · 30-day avg: ${_fmt(avg30)}',
+              l10n.statsAverages(
+                _fmt(context, avg7),
+                _fmt(context, avg30),
+              ),
               style: theme.textTheme.bodySmall,
             ),
           ],

@@ -3,6 +3,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 
+import '../l10n/generated/app_localizations.dart';
 import '../utils/prefs.dart';
 
 /// Wraps `flutter_local_notifications` + `shared_preferences` reminder
@@ -13,17 +14,23 @@ import '../utils/prefs.dart';
 /// - `DarwinInitializationSettings` defaults `request*Permission` to **true**,
 ///   which would prompt for permission at startup on iOS — explicitly disabled
 ///   here; permissions are requested only when the user enables the reminder.
+///
+/// i18n (Phase 7): no `BuildContext` here, so strings are resolved via the
+/// generated top-level `lookupAppLocalizations` with the system locale. They
+/// are baked in at schedule time; `rescheduleFromSettings()` runs on every
+/// launch, so a system-language change takes effect on the next launch (spec
+/// §5).
 class NotificationService {
   static const notificationId = 1001; // fixed ID → rescheduling replaces, never duplicates
   static const channelId = 'daily_reminder';
-  static const channelName = 'Daily reminder';
-  static const title = 'Daily check-in';
-  static const body = 'Log your sleep, exercise, stress, and screen time.';
   static const defaultHour = 20;
   static const defaultMinute = 0;
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
+
+  AppLocalizations _l10n() =>
+      lookupAppLocalizations(PlatformDispatcher.instance.locale);
 
   /// Registers both tap callbacks (spec §5, deep-link entry points 1 & 2).
   /// `onDidReceiveBackgroundNotificationResponse` must be a top-level
@@ -94,16 +101,18 @@ class NotificationService {
         ? AndroidScheduleMode.exactAllowWhileIdle
         : AndroidScheduleMode.inexactAllowWhileIdle;
 
+    final l10n = _l10n();
+
     await _plugin.zonedSchedule(
       id: notificationId,
-      title: title,
-      body: body,
+      title: l10n.notifTitle,
+      body: l10n.notifBody,
       scheduledDate: scheduled,
-      notificationDetails: const NotificationDetails(
+      notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
           channelId,
-          channelName,
-          channelDescription: 'Once-daily reminder to log your day',
+          l10n.notifChannelName,
+          channelDescription: l10n.notifChannelDescription,
           icon: 'ic_stat_moon', // small-icon silhouette (matches default)
           importance: Importance.defaultImportance,
           priority: Priority.defaultPriority,

@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
+import 'package:sleep_tracker/l10n/generated/app_localizations.dart';
 import 'package:sleep_tracker/services/notification_service.dart';
 import 'package:sleep_tracker/ui/settings_screen.dart';
 import 'package:sleep_tracker/viewmodels/feature_settings_controller.dart';
@@ -35,7 +36,11 @@ void main() {
           Provider.value(value: NotificationService()),
           ChangeNotifierProvider.value(value: featureSettings),
         ],
-        child: const MaterialApp(home: SettingsScreen()),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SettingsScreen(),
+        ),
       ),
     );
     await tester.pumpAndSettle();

@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 
 import '../data/daily_repository.dart';
 import '../data/database.dart';
+import '../l10n/feature_strings.dart';
+import '../l10n/generated/app_localizations.dart';
 import '../models/feature_def.dart';
 import '../utils/dates.dart';
 import '../viewmodels/feature_settings_controller.dart';
@@ -19,12 +21,13 @@ class HistoryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final repo = context.read<DailyRepository>();
     final features = context.watch<FeatureSettingsController>().enabledFeatures;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('History')),
+      appBar: AppBar(title: Text(l10n.navHistory)),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _addOrEditEntry(context, repo, features),
-        tooltip: 'Add or edit a day',
+        tooltip: l10n.historyAddTooltip,
         child: const Icon(Icons.add),
       ),
       body: StreamBuilder<List<DailyEntry>>(
@@ -35,12 +38,11 @@ class HistoryScreen extends StatelessWidget {
           }
           final entries = snapshot.data!;
           if (entries.isEmpty) {
-            return const Center(
+            return Center(
               child: Padding(
-                padding: EdgeInsets.all(24),
+                padding: const EdgeInsets.all(24),
                 child: Text(
-                  'No entries yet — log today from the Today tab, or tap + '
-                  'to backfill a past day.',
+                  l10n.historyEmpty,
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -153,13 +155,16 @@ class _HistoryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Display format — the ISO key stays storage-only (spec §3).
-    final displayDate = DateFormat.MMMEd().format(DateTime.parse(entry.date));
+    final l10n = AppLocalizations.of(context);
+    // Display format — the ISO key stays storage-only (spec §3); locale-aware.
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final displayDate =
+        DateFormat.MMMEd(locale).format(DateTime.parse(entry.date));
     final note = entry.note;
 
-    // Compact summary of enabled features: short label + value.
+    // Compact summary of enabled features: localized short label + value.
     final summary = features
-        .map((f) => '${_shortLabel(f.label)}:${f.getValue(entry) ?? '-'}')
+        .map((f) => '${featureShortLabel(l10n, f.key)}:${f.getValue(entry) ?? '-'}')
         .join(' ');
 
     return ListTile(
@@ -201,10 +206,4 @@ class _HistoryRow extends StatelessWidget {
       trailing: const Icon(Icons.chevron_right),
     );
   }
-
-  static String _shortLabel(String label) => switch (label) {
-        'School stress' => 'Stress',
-        'Screen time' => 'Screen',
-        _ => label,
-      };
 }

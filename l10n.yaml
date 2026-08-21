@@ -1,0 +1,7 @@
+# Phase 7 (i18n) — gen_l10n configuration (spec §2, Localization setup).
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+output-dir: lib/l10n/generated
+nullable-getter: false
+untranslated-messages-file: lib/l10n/untranslated.txt

@@ -2,24 +2,22 @@ import '../data/database.dart';
 
 /// A single trackable feature (spec §3).
 ///
+/// Display strings (label/captions) are deliberately **not** here — since
+/// Phase 7 they live in ARB, resolved via `feature_strings.dart` in the widget
+/// layer only (spec §0: no localized strings in const data).
+///
 /// [scaleLength] defines the input type (there is no separate "type" enum):
 /// - `1` → checkbox
 /// - `2` → switch
 /// - `>=3` → circle-row picker (0 .. scaleLength-1)
 class FeatureDef {
   final String key; // matches the Drift column name
-  final String label;
   final int scaleLength;
-  final String lowCaption;
-  final String highCaption;
   final bool defaultEnabled;
 
   const FeatureDef({
     required this.key,
-    required this.label,
     required this.scaleLength,
-    required this.lowCaption,
-    required this.highCaption,
     this.defaultEnabled = false,
   });
 
@@ -45,123 +43,76 @@ class FeatureDef {
       };
 }
 
-/// The full fixed catalog (spec §3). Original four are enabled by default so
+/// The full fixed catalog (spec §3). Keys only — display strings are resolved
+/// from ARB via `feature_strings.dart`. Original four are enabled by default so
 /// existing users see zero behavior change; the rest opt in via Settings.
 const allFeatures = <FeatureDef>[
   FeatureDef(
     key: 'sleepRating',
-    label: 'Sleep',
     scaleLength: 5,
-    lowCaption: 'poor',
-    highCaption: 'great',
     defaultEnabled: true,
   ),
   FeatureDef(
     key: 'exerciseRating',
-    label: 'Exercise',
     scaleLength: 5,
-    lowCaption: 'none',
-    highCaption: 'a lot',
     defaultEnabled: true,
   ),
   FeatureDef(
     key: 'schoolStressRating',
-    label: 'School stress',
     scaleLength: 5,
-    lowCaption: 'nothing special',
-    highCaption: 'very stressful',
     defaultEnabled: true,
   ),
   FeatureDef(
     key: 'screenUsageRating',
-    label: 'Screen time',
     scaleLength: 5,
-    lowCaption: 'no screens',
-    highCaption: 'heavy use',
     defaultEnabled: true,
   ),
   FeatureDef(
     key: 'moodRating',
-    label: 'Mood',
     scaleLength: 5,
-    lowCaption: 'low',
-    highCaption: 'great',
   ),
   FeatureDef(
     key: 'energyRating',
-    label: 'Energy',
     scaleLength: 5,
-    lowCaption: 'drained',
-    highCaption: 'energized',
   ),
   FeatureDef(
     key: 'nutritionRating',
-    label: 'Nutrition',
     scaleLength: 5,
-    lowCaption: 'poor',
-    highCaption: 'great',
   ),
   FeatureDef(
     key: 'physicalRating',
-    label: 'Physical pain',
     scaleLength: 5,
-    lowCaption: 'none',
-    highCaption: 'severe',
   ),
   FeatureDef(
     key: 'socialRating',
-    label: 'Social',
     scaleLength: 5,
-    lowCaption: 'none',
-    highCaption: 'a lot',
   ),
   FeatureDef(
     key: 'productivityRating',
-    label: 'Productivity',
     scaleLength: 5,
-    lowCaption: 'low',
-    highCaption: 'high',
   ),
   FeatureDef(
     key: 'waterRating',
-    label: 'Water',
     scaleLength: 5,
-    lowCaption: 'almost none',
-    highCaption: 'a lot',
   ),
   FeatureDef(
     key: 'caffeineRating',
-    label: 'Caffeine',
     scaleLength: 5,
-    lowCaption: 'none',
-    highCaption: 'a lot',
   ),
   FeatureDef(
     key: 'alcoholRating',
-    label: 'Alcohol',
     scaleLength: 5,
-    lowCaption: 'none',
-    highCaption: 'a lot',
   ),
   FeatureDef(
     key: 'smokingRating',
-    label: 'Smoking',
     scaleLength: 5,
-    lowCaption: 'none',
-    highCaption: 'a lot',
   ),
   FeatureDef(
     key: 'medicationTaken',
-    label: 'Medication',
     scaleLength: 2,
-    lowCaption: 'no',
-    highCaption: 'yes',
   ),
   FeatureDef(
     key: 'workdayFlag',
-    label: 'Workday',
     scaleLength: 2,
-    lowCaption: 'day off',
-    highCaption: 'workday',
   ),
 ];

@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../data/daily_repository.dart';
+import '../l10n/generated/app_localizations.dart';
 import '../viewmodels/feature_settings_controller.dart';
 import '../viewmodels/today_view_model.dart';
 import 'settings_screen.dart';
@@ -20,9 +21,13 @@ class TodayScreen extends StatelessWidget {
     final vm = context.watch<TodayViewModel>();
     final repo = context.read<DailyRepository>();
     final features = context.watch<FeatureSettingsController>().enabledFeatures;
+    final l10n = AppLocalizations.of(context);
 
-    // Display uses a human-readable format; the ISO key stays storage-only.
-    final displayDate = DateFormat.yMMMMd().format(DateTime.parse(vm.today));
+    // Display uses a human-readable, locale-aware format; the ISO key stays
+    // storage-only (spec §2 invariant).
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final displayDate =
+        DateFormat.yMMMMd(locale).format(DateTime.parse(vm.today));
 
     return Scaffold(
       appBar: AppBar(
@@ -30,7 +35,7 @@ class TodayScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Settings',
+            tooltip: l10n.todaySettingsTooltip,
             onPressed: () {
               Navigator.push(
                 context,
@@ -56,7 +61,7 @@ class TodayScreen extends StatelessWidget {
                 onSave: repo.upsert,
                 onSaved: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Saved')),
+                    SnackBar(content: Text(l10n.todaySaved)),
                   );
                 },
               ),

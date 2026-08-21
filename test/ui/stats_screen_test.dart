@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:sleep_tracker/data/daily_repository.dart';
 import 'package:sleep_tracker/data/database.dart';
+import 'package:sleep_tracker/l10n/generated/app_localizations.dart';
 import 'package:sleep_tracker/ui/stats_screen.dart';
 import 'package:sleep_tracker/utils/dates.dart';
 import 'package:sleep_tracker/viewmodels/feature_settings_controller.dart';
@@ -50,7 +51,11 @@ void main() {
             create: (_) => StatsViewModel(repo, featureSettings),
           ),
         ],
-        child: const MaterialApp(home: StatsScreen()),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const StatsScreen(),
+        ),
       ),
     );
     await tester.pumpAndSettle();

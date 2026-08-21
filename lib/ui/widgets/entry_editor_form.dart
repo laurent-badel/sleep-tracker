@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../data/companion_builder.dart';
 import '../../data/database.dart';
+import '../../l10n/feature_strings.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../models/feature_def.dart';
 import 'rating_picker.dart';
 
@@ -86,6 +88,7 @@ class _EntryEditorFormState extends State<EntryEditorForm> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -96,13 +99,13 @@ class _EntryEditorFormState extends State<EntryEditorForm> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Metrics', style: theme.textTheme.titleMedium),
+                Text(l10n.metricsHeader, style: theme.textTheme.titleMedium),
                 const Divider(height: 24),
                 for (final f in widget.features) ...[
                   RatingPicker(
-                    label: f.label,
-                    lowCaption: f.lowCaption,
-                    highCaption: f.highCaption,
+                    label: featureLabel(l10n, f.key),
+                    lowCaption: featureLowCaption(l10n, f.key),
+                    highCaption: featureHighCaption(l10n, f.key),
                     scaleLength: f.scaleLength,
                     value: _ratings[f.key] ?? 0,
                     onChanged: (v) => setState(() => _ratings[f.key] = v),
@@ -117,15 +120,15 @@ class _EntryEditorFormState extends State<EntryEditorForm> {
         TextField(
           controller: _noteController,
           maxLines: 3,
-          decoration: const InputDecoration(
-            labelText: 'Note (optional)',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: l10n.noteLabel,
+            border: const OutlineInputBorder(),
           ),
         ),
         const SizedBox(height: 16),
         FilledButton(
           onPressed: _saving ? null : _save,
-          child: const Text('Save'),
+          child: Text(l10n.saveButton),
         ),
       ],
     );

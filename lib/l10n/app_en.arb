@@ -1,0 +1,113 @@
+{
+  "@@locale": "en",
+
+  "@@last_modified": "2026-08-21",
+
+  "@@description": "English template for Sleep Tracker. All user-visible strings live here; nothing English should remain in source outside the brand title (MaterialApp.title).",
+
+  "navToday": "Today",
+  "navHistory": "History",
+  "navStats": "Stats",
+
+  "todaySettingsTooltip": "Settings",
+  "todaySaved": "Saved",
+
+  "metricsHeader": "Metrics",
+  "noteLabel": "Note (optional)",
+  "saveButton": "Save",
+
+  "historyEmpty": "No entries yet — log today from the Today tab, or tap + to backfill a past day.",
+  "historyAddTooltip": "Add or edit a day",
+
+  "statsNotEnoughData": "Log at least two days to see your stats.",
+  "streakDays": "{count, plural, =1{1-day streak} other{{count}-day streak}}",
+  "@streakDays": {
+    "description": "Streak card header. {count} is the number of consecutive days.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "streakStartHint": "Log a day to start a streak",
+  "streakKeepGoing": "Keep it going!",
+  "statsAverages": "7-day avg: {avg7} · 30-day avg: {avg30}",
+  "@statsAverages": {
+    "description": "Per-feature averages row. Values are pre-formatted strings (locale-aware decimal separator).",
+    "placeholders": {
+      "avg7": {
+        "type": "String"
+      },
+      "avg30": {
+        "type": "String"
+      }
+    }
+  },
+
+  "settingsTitle": "Settings",
+  "settingsReminder": "Daily reminder",
+  "settingsReminderSubtitle": "Remind me to log my day",
+  "settingsReminderTime": "Reminder time",
+  "settingsFeatures": "Features",
+  "settingsFeaturesSubtitle": "Choose what to track. Disabling never deletes past data.",
+  "settingsPermissionDenied": "Enable notifications in system settings to receive reminders",
+
+  "notifTitle": "Daily check-in",
+  "notifBody": "Log your sleep, exercise, stress, and screen time.",
+  "notifChannelName": "Daily reminder",
+  "notifChannelDescription": "Once-daily reminder to log your day",
+
+  "featureSleepRating": "Sleep",
+  "featureExerciseRating": "Exercise",
+  "featureSchoolStressRating": "School stress",
+  "featureScreenUsageRating": "Screen time",
+  "featureMoodRating": "Mood",
+  "featureEnergyRating": "Energy",
+  "featureNutritionRating": "Nutrition",
+  "featurePhysicalRating": "Physical pain",
+  "featureSocialRating": "Social",
+  "featureProductivityRating": "Productivity",
+  "featureWaterRating": "Water",
+  "featureCaffeineRating": "Caffeine",
+  "featureAlcoholRating": "Alcohol",
+  "featureSmokingRating": "Smoking",
+  "featureMedicationTaken": "Medication",
+  "featureWorkdayFlag": "Workday",
+
+  "featureSleepRatingLow": "poor",
+  "featureExerciseRatingLow": "none",
+  "featureSchoolStressRatingLow": "nothing special",
+  "featureScreenUsageRatingLow": "no screens",
+  "featureMoodRatingLow": "low",
+  "featureEnergyRatingLow": "drained",
+  "featureNutritionRatingLow": "poor",
+  "featurePhysicalRatingLow": "none",
+  "featureSocialRatingLow": "none",
+  "featureProductivityRatingLow": "low",
+  "featureWaterRatingLow": "almost none",
+  "featureCaffeineRatingLow": "none",
+  "featureAlcoholRatingLow": "none",
+  "featureSmokingRatingLow": "none",
+  "featureMedicationTakenLow": "no",
+  "featureWorkdayFlagLow": "day off",
+
+  "featureSleepRatingHigh": "great",
+  "featureExerciseRatingHigh": "a lot",
+  "featureSchoolStressRatingHigh": "very stressful",
+  "featureScreenUsageRatingHigh": "heavy use",
+  "featureMoodRatingHigh": "great",
+  "featureEnergyRatingHigh": "energized",
+  "featureNutritionRatingHigh": "great",
+  "featurePhysicalRatingHigh": "severe",
+  "featureSocialRatingHigh": "a lot",
+  "featureProductivityRatingHigh": "high",
+  "featureWaterRatingHigh": "a lot",
+  "featureCaffeineRatingHigh": "a lot",
+  "featureAlcoholRatingHigh": "a lot",
+  "featureSmokingRatingHigh": "a lot",
+  "featureMedicationTakenHigh": "yes",
+  "featureWorkdayFlagHigh": "workday",
+
+  "featureSchoolStressRatingShort": "Stress",
+  "featureScreenUsageRatingShort": "Screen"
+}

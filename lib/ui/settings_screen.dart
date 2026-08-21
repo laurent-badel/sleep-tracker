@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/feature_strings.dart';
+import '../l10n/generated/app_localizations.dart';
 import '../models/feature_def.dart';
 import '../services/notification_service.dart';
 import '../viewmodels/feature_settings_controller.dart';
@@ -44,16 +46,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (value) {
       // Capture before the await — no BuildContext use across the async gap.
       final messenger = ScaffoldMessenger.of(context);
+      final denialText = AppLocalizations.of(context).settingsPermissionDenied;
       final granted = await notifications.requestPermissions();
       if (!mounted) return;
       if (!granted) {
-        messenger.showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Enable notifications in system settings to receive reminders',
-            ),
-          ),
-        );
+        messenger.showSnackBar(SnackBar(content: Text(denialText)));
       }
       await notifications.saveReminderSettings(
         enabled: true,
@@ -88,37 +85,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: Text(l10n.settingsTitle)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               children: [
                 SwitchListTile(
-                  title: const Text('Daily reminder'),
-                  subtitle: const Text('Remind me to log my day'),
+                  title: Text(l10n.settingsReminder),
+                  subtitle: Text(l10n.settingsReminderSubtitle),
                   value: _enabled,
                   onChanged: _onToggle,
                 ),
                 ListTile(
-                  title: const Text('Reminder time'),
+                  title: Text(l10n.settingsReminderTime),
                   subtitle: Text(_time.format(context)),
                   trailing: const Icon(Icons.schedule),
                   onTap: _pickTime,
                 ),
                 const Divider(),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                   child: Text(
-                    'Features',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    l10n.settingsFeatures,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                   child: Text(
-                    'Choose what to track. Disabling never deletes past data.',
-                    style: TextStyle(fontSize: 12),
+                    l10n.settingsFeaturesSubtitle,
+                    style: const TextStyle(fontSize: 12),
                   ),
                 ),
                 _FeaturesSection(),
@@ -132,6 +130,7 @@ class _FeaturesSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<FeatureSettingsController>();
+    final l10n = AppLocalizations.of(context);
     if (!controller.loaded) {
       return const Padding(
         padding: EdgeInsets.all(16),
@@ -142,7 +141,7 @@ class _FeaturesSection extends StatelessWidget {
       children: [
         for (final f in allFeatures)
           CheckboxListTile(
-            title: Text(f.label),
+            title: Text(featureLabel(l10n, f.key)),
             value: controller.enabledKeys.contains(f.key),
             onChanged: (v) => controller.setEnabled(f.key, v ?? false),
           ),
