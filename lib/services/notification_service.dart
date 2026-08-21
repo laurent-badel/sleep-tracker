@@ -33,7 +33,9 @@ class NotificationService {
     required void Function(NotificationResponse) onDidReceiveBackgroundNotificationResponse,
   }) async {
     const settings = InitializationSettings(
-      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      // Small-icon: a crescent-moon alpha silhouette (Android tints it white
+      // in the status bar; a full-color launcher icon renders as a white box).
+      android: AndroidInitializationSettings('@drawable/ic_stat_moon'),
       iOS: DarwinInitializationSettings(
         // Suppress init-time permission requests — we ask on enable instead.
         requestAlertPermission: false,
@@ -102,6 +104,7 @@ class NotificationService {
           channelId,
           channelName,
           channelDescription: 'Once-daily reminder to log your day',
+          icon: 'ic_stat_moon', // small-icon silhouette (matches default)
           importance: Importance.defaultImportance,
           priority: Priority.defaultPriority,
         ),
