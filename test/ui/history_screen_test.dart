@@ -114,9 +114,13 @@ void main() {
     // Sheet closed after save.
     expect(find.text('Metrics'), findsNothing);
 
-    // Entry updated.
-    final entry = await repo.watchByDate('2026-08-20').first;
-    expect(entry!.sleepRating, 5);
+    // Verify DB state in real-async mode: drift delivers stream events via
+    // timers, which never fire inside testWidgets' fake-async zone — an
+    // `await stream.first` outside runAsync hangs until the per-test timeout.
+    await tester.runAsync(() async {
+      final entry = await repo.watchByDate('2026-08-20').first;
+      expect(entry!.sleepRating, 5);
+    });
 
     await teardownTree(tester);
   });

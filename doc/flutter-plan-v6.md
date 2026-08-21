@@ -394,13 +394,19 @@ Derived state, recomputed on each emission, then `notifyListeners()`:
 
 **Layout (closed):** streak card on top ("N-day streak", or "—" when none), then four metric cards — each with a metric-name header, the 30-day bar chart, and one averages row: `7-day avg: X.X · 30-day avg: X.X`, rendering "—" when the window has no data.
 
-**Chart painter contract:** one parameterized `CustomPainter` (or one subclass per metric) drawing the 30 slots as vertical bars: fixed y-scale **0–5** (no auto-scaling, so weeks are comparable), bar height = `rating / 5 * availableHeight`, missing days as short light-gray bars so gaps stay visible. Colors are passed in from `Theme` at construction (don't hardcode — dark mode). Fixed height, full width, inside the scrollable column:
+**Chart painter contract:** one parameterized `CustomPainter` (or one subclass per metric) drawing the 30 slots as vertical bars: fixed y-scale **0–5** (no auto-scaling, so weeks are comparable), bar height = `rating / 5 * availableHeight`, missing days as short light-gray bars so gaps stay visible. Colors are passed in from `Theme` at construction (don't hardcode — dark mode). Fixed height, full width, inside the scrollable column. **Implemented as a single painter that additionally takes a `ratingOf` tear-off (`Metric.ratingOf`) so it stays metric-agnostic** — this is within the "one parameterized CustomPainter" option:
 
 <CODE lang="dart">
 class MetricChartPainter extends CustomPainter {
-  MetricChartPainter({required this.slots, required this.filledColor, required this.gapColor});
+  MetricChartPainter({
+    required this.slots,
+    required this.ratingOf,       // Metric.ratingOf tear-off
+    required this.filledColor,
+    required this.gapColor,
+  });
 
   final List<DailyEntry?> slots; // length 30, ascending, today last
+  final int Function(DailyEntry) ratingOf;
   final Color filledColor;
   final Color gapColor;
 
@@ -409,6 +415,7 @@ class MetricChartPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant MetricChartPainter old) =>
       old.slots != slots ||
+      old.ratingOf != ratingOf ||
       old.filledColor != filledColor ||
       old.gapColor != gapColor;
 }

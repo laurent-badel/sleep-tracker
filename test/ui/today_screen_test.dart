@@ -44,11 +44,15 @@ void main() {
 
     expect(find.text('Saved'), findsOneWidget); // snackbar
 
-    // Entry persisted with the picked rating, note normalized to null.
-    final entry = await repo.watchByDate(todayKey()).first;
-    expect(entry, isNotNull);
-    expect(entry!.sleepRating, 4);
-    expect(entry.note, isNull);
+    // Verify DB state in real-async mode: drift delivers stream events via
+    // timers, which never fire inside testWidgets' fake-async zone — an
+    // `await stream.first` outside runAsync hangs until the per-test timeout.
+    await tester.runAsync(() async {
+      final entry = await repo.watchByDate(todayKey()).first;
+      expect(entry, isNotNull);
+      expect(entry!.sleepRating, 4);
+      expect(entry.note, isNull);
+    });
 
     // Dispose the tree inside the test body, then advance fake time so
     // drift's zero-duration stream-close timer fires (a plain pump() with no
