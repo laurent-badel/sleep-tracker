@@ -22,7 +22,7 @@ These are **closed** — do not re-litigate them during implementation:
 - **Entry deletion:** out of scope. There is no `delete` in the DAO/repository and no delete affordance in the UI.
 - **Feature model:** every feature is defined by its `scaleLength`. `1` = checkbox, `2` = switch, `>=3` = circle-row picker. There is no separate "type" enum. No numeric/free-value features (e.g., exact water ounces) in this tier.
 - **Feature selection is global, not per-entry.** One enabled-set in `shared_preferences`, applied app-wide. 
-- **The original four features keep their original semantics** (sleep, exercise, school stress, screen time all stay `scaleLength: 6`, 0–5) — existing logged data is never reinterpreted onto a different scale.
+- **All ordinal features use `scaleLength: 5` (values 0–4).** Decided 2026-08-21 (overrides the earlier "original four stay 0–5" decision): 5 levels give a convenient midpoint (2) for qualitative judgments. The original four keep their *identity* (labels, captions, default-enabled) and are still never *reinterpreted* across feature keys — but their scale is now 5 like the rest of the catalog. Booleans stay `scaleLength: 2` (medication, workday). **Data note:** any previously logged value of 5 (from the old 0–5 era, test data only) clamps to 4 on the next edit; until re-saved it renders slightly tall in charts — no migration is performed for this semantic change.
 - **No custom/user-defined features** (arbitrary types, EAV schema) — deliberately out of scope. Fixed-catalog only.
 - **Android minSdk:** 26 (Android 8.0+). **Core library desugaring is still enabled** — `flutter_local_notifications`' AAR declares `requiresDesugaring=true` and AGP fails the build without it, even at minSdk 26. At API 26+ `java.time` is native, so desugaring is effectively a compile-time no-op.
 - **Backup/export, localization:** out of scope; English only.
@@ -301,14 +301,14 @@ class FeatureDef {
 
 const allFeatures = <FeatureDef>[
   // Original four — enabled by default so existing users see zero behavior change.
-  FeatureDef(key: 'sleepRating', label: 'Sleep', scaleLength: 6, lowCaption: 'poor', highCaption: 'great', defaultEnabled: true),
-  FeatureDef(key: 'exerciseRating', label: 'Exercise', scaleLength: 6, lowCaption: 'none', highCaption: 'a lot', defaultEnabled: true),
-  FeatureDef(key: 'schoolStressRating', label: 'School stress', scaleLength: 6, lowCaption: 'nothing special', highCaption: 'very stressful', defaultEnabled: true),
-  FeatureDef(key: 'screenUsageRating', label: 'Screen time', scaleLength: 6, lowCaption: 'no screens', highCaption: 'heavy use', defaultEnabled: true),
+  FeatureDef(key: 'sleepRating', label: 'Sleep', scaleLength: 5, lowCaption: 'poor', highCaption: 'great', defaultEnabled: true),
+  FeatureDef(key: 'exerciseRating', label: 'Exercise', scaleLength: 5, lowCaption: 'none', highCaption: 'a lot', defaultEnabled: true),
+  FeatureDef(key: 'schoolStressRating', label: 'School stress', scaleLength: 5, lowCaption: 'nothing special', highCaption: 'very stressful', defaultEnabled: true),
+  FeatureDef(key: 'screenUsageRating', label: 'Screen time', scaleLength: 5, lowCaption: 'no screens', highCaption: 'heavy use', defaultEnabled: true),
 
   // New catalog — off by default, user opts in via Settings.
-  FeatureDef(key: 'moodRating', label: 'Mood', scaleLength: 7, lowCaption: 'low', highCaption: 'great'),
-  FeatureDef(key: 'energyRating', label: 'Energy', scaleLength: 7, lowCaption: 'drained', highCaption: 'energized'),
+  FeatureDef(key: 'moodRating', label: 'Mood', scaleLength: 5, lowCaption: 'low', highCaption: 'great'),
+  FeatureDef(key: 'energyRating', label: 'Energy', scaleLength: 5, lowCaption: 'drained', highCaption: 'energized'),
   FeatureDef(key: 'nutritionRating', label: 'Nutrition', scaleLength: 5, lowCaption: 'poor', highCaption: 'great'),
   FeatureDef(key: 'physicalRating', label: 'Physical pain', scaleLength: 5, lowCaption: 'none', highCaption: 'severe'),
   FeatureDef(key: 'socialRating', label: 'Social', scaleLength: 5, lowCaption: 'none', highCaption: 'a lot'),

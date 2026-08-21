@@ -3,16 +3,22 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:sleep_tracker/data/daily_repository.dart';
 import 'package:sleep_tracker/data/database.dart';
 import 'package:sleep_tracker/ui/history_screen.dart';
+import 'package:sleep_tracker/viewmodels/feature_settings_controller.dart';
 
 void main() {
   late AppDatabase db;
   late DailyRepository repo;
+  late FeatureSettingsController featureSettings;
 
-  setUp(() {
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    featureSettings = FeatureSettingsController();
+    await featureSettings.load();
     db = AppDatabase.forTesting(NativeDatabase.memory());
     repo = DailyRepository(db.dailyDao);
   });
@@ -22,7 +28,10 @@ void main() {
   Future<void> pumpHistory(WidgetTester tester) async {
     await tester.pumpWidget(
       MultiProvider(
-        providers: [Provider.value(value: repo)],
+        providers: [
+          Provider.value(value: repo),
+          ChangeNotifierProvider.value(value: featureSettings),
+        ],
         child: const MaterialApp(home: HistoryScreen()),
       ),
     );
@@ -63,7 +72,10 @@ void main() {
     await pumpHistory(tester);
 
     expect(
-      find.text('No entries yet — log your first day from the Today tab.'),
+      find.text(
+        'No entries yet — log today from the Today tab, or tap + '
+        'to backfill a past day.',
+      ),
       findsOneWidget,
     );
 
@@ -80,9 +92,9 @@ void main() {
     expect(find.text('Thu, Aug 20'), findsOneWidget);
     expect(find.text('Fri, Aug 21'), findsOneWidget);
 
-    // Compact summaries.
-    expect(find.text('Sleep:4 Ex:3 Stress:2 Screen:5'), findsOneWidget);
-    expect(find.text('Sleep:0 Ex:0 Stress:0 Screen:0'), findsOneWidget);
+    // Compact summaries (full short labels; '-' for a not-logged feature).
+    expect(find.text('Sleep:4 Exercise:3 Stress:2 Screen:5'), findsOneWidget);
+    expect(find.text('Sleep:0 Exercise:0 Stress:0 Screen:0'), findsOneWidget);
 
     // Note icon + preview for the entry with a note.
     expect(find.byIcon(Icons.notes), findsOneWidget);
@@ -104,7 +116,7 @@ void main() {
     expect(find.text('Sleep'), findsOneWidget);
 
     // Change the sleep rating and save.
-    await tester.tap(find.byTooltip('Sleep 5'));
+    await tester.tap(find.byTooltip('Sleep 4'));
     await tester.pump();
     await tester.ensureVisible(find.text('Save'));
     await tester.pumpAndSettle();
@@ -119,7 +131,7 @@ void main() {
     // `await stream.first` outside runAsync hangs until the per-test timeout.
     await tester.runAsync(() async {
       final entry = await repo.watchByDate('2026-08-20').first;
-      expect(entry!.sleepRating, 5);
+      expect(entry!.sleepRating, 4); // tapped Sleep 4 (5-level scale, 0-4)
     });
 
     await teardownTree(tester);

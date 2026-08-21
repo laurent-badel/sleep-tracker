@@ -4,19 +4,29 @@ import 'package:provider/provider.dart';
 
 import '../data/daily_repository.dart';
 import '../data/database.dart';
+import '../models/feature_def.dart';
+import '../utils/dates.dart';
+import '../viewmodels/feature_settings_controller.dart';
 import 'widgets/entry_editor_form.dart';
 
 /// Tab 1 — no ViewModel (spec §0): a `StreamBuilder` on `watchAll()`, with the
-/// shared `EntryEditorForm` reused in a bottom sheet (pop on save).
+/// shared `EntryEditorForm` reused in a bottom sheet (pop on save). The FAB
+/// backfills a past day (spec §3).
 class HistoryScreen extends StatelessWidget {
   const HistoryScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final repo = context.read<DailyRepository>();
+    final features = context.watch<FeatureSettingsController>().enabledFeatures;
 
     return Scaffold(
       appBar: AppBar(title: const Text('History')),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _addOrEditEntry(context, repo, features),
+        tooltip: 'Add or edit a day',
+        child: const Icon(Icons.add),
+      ),
       body: StreamBuilder<List<DailyEntry>>(
         stream: repo.watchAll(),
         builder: (context, snapshot) {
@@ -29,7 +39,8 @@ class HistoryScreen extends StatelessWidget {
               child: Padding(
                 padding: EdgeInsets.all(24),
                 child: Text(
-                  'No entries yet — log your first day from the Today tab.',
+                  'No entries yet — log today from the Today tab, or tap + '
+                  'to backfill a past day.',
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -41,7 +52,8 @@ class HistoryScreen extends StatelessWidget {
               final entry = entries[index];
               return _HistoryRow(
                 entry: entry,
-                onTap: () => _openEditor(context, repo, entry),
+                features: features,
+                onTap: () => _openEditor(context, repo, features, entry),
               );
             },
           );
@@ -53,6 +65,7 @@ class HistoryScreen extends StatelessWidget {
   void _openEditor(
     BuildContext context,
     DailyRepository repo,
+    List<FeatureDef> features,
     DailyEntry entry,
   ) {
     showModalBottomSheet<void>(
@@ -68,11 +81,57 @@ class HistoryScreen extends StatelessWidget {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: EntryEditorForm(
-            key: ValueKey(entry.date),
+            key: ValueKey(
+              '${entry.date}|${features.map((f) => f.key).join(',')}',
+            ),
             date: entry.date,
             initial: entry,
+            features: features,
             onSave: repo.upsert,
             onSaved: () => Navigator.pop(sheetContext), // pop after save
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _addOrEditEntry(
+    BuildContext context,
+    DailyRepository repo,
+    List<FeatureDef> features,
+  ) async {
+    final today = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: today,
+      firstDate: DateTime(2020),
+      lastDate: today, // can't log future days (spec §3)
+    );
+    if (picked == null) return;
+    if (!context.mounted) return;
+
+    final pickedKey = dateKey(picked);
+    final existing = await repo.getByDate(pickedKey);    if (!context.mounted) return;
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: EntryEditorForm(
+            key: ValueKey(
+              '$pickedKey|${features.map((f) => f.key).join(',')}',
+            ),
+            date: pickedKey,
+            initial: existing,
+            features: features,
+            onSave: repo.upsert,
+            onSaved: () => Navigator.pop(sheetContext),
           ),
         ),
       ),
@@ -81,9 +140,14 @@ class HistoryScreen extends StatelessWidget {
 }
 
 class _HistoryRow extends StatelessWidget {
-  const _HistoryRow({required this.entry, required this.onTap});
+  const _HistoryRow({
+    required this.entry,
+    required this.features,
+    required this.onTap,
+  });
 
   final DailyEntry entry;
+  final List<FeatureDef> features;
   final VoidCallback onTap;
 
   @override
@@ -93,6 +157,11 @@ class _HistoryRow extends StatelessWidget {
     final displayDate = DateFormat.MMMEd().format(DateTime.parse(entry.date));
     final note = entry.note;
 
+    // Compact summary of enabled features: short label + value.
+    final summary = features
+        .map((f) => '${_shortLabel(f.label)}:${f.getValue(entry) ?? '-'}')
+        .join(' ');
+
     return ListTile(
       onTap: onTap,
       title: Text(displayDate),
@@ -100,11 +169,7 @@ class _HistoryRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 2),
-          Text(
-            'Sleep:${entry.sleepRating} Ex:${entry.exerciseRating} '
-            'Stress:${entry.schoolStressRating} Screen:${entry.screenUsageRating}',
-            style: theme.textTheme.bodySmall,
-          ),
+          Text(summary, style: theme.textTheme.bodySmall),
           if (note != null && note.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 4),
@@ -136,4 +201,10 @@ class _HistoryRow extends StatelessWidget {
       trailing: const Icon(Icons.chevron_right),
     );
   }
+
+  static String _shortLabel(String label) => switch (label) {
+        'School stress' => 'Stress',
+        'Screen time' => 'Screen',
+        _ => label,
+      };
 }

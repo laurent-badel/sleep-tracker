@@ -3,18 +3,24 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:sleep_tracker/data/daily_repository.dart';
 import 'package:sleep_tracker/data/database.dart';
 import 'package:sleep_tracker/ui/stats_screen.dart';
 import 'package:sleep_tracker/utils/dates.dart';
+import 'package:sleep_tracker/viewmodels/feature_settings_controller.dart';
 import 'package:sleep_tracker/viewmodels/stats_view_model.dart';
 
 void main() {
   late AppDatabase db;
   late DailyRepository repo;
+  late FeatureSettingsController featureSettings;
 
-  setUp(() {
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    featureSettings = FeatureSettingsController();
+    await featureSettings.load();
     db = AppDatabase.forTesting(NativeDatabase.memory());
     repo = DailyRepository(db.dailyDao);
   });
@@ -39,7 +45,10 @@ void main() {
       MultiProvider(
         providers: [
           Provider.value(value: repo),
-          ChangeNotifierProvider(create: (_) => StatsViewModel(repo)),
+          ChangeNotifierProvider.value(value: featureSettings),
+          ChangeNotifierProvider(
+            create: (_) => StatsViewModel(repo, featureSettings),
+          ),
         ],
         child: const MaterialApp(home: StatsScreen()),
       ),

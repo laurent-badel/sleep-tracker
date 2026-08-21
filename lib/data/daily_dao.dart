@@ -19,4 +19,8 @@ class DailyDao extends DatabaseAccessor<AppDatabase> with _$DailyDaoMixin {
       (select(dailyEntries)
         ..orderBy([(t) => OrderingTerm.desc(t.date)]))
           .watch();
+
+  Future<DailyEntry?> getByDate(String date) =>
+      (select(dailyEntries)..where((t) => t.date.equals(date)))
+          .getSingleOrNull();
 }

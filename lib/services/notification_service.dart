@@ -3,6 +3,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 
+import '../utils/prefs.dart';
+
 /// Wraps `flutter_local_notifications` + `shared_preferences` reminder
 /// settings (spec §5).
 ///
@@ -19,10 +21,6 @@ class NotificationService {
   static const body = 'Log your sleep, exercise, stress, and screen time.';
   static const defaultHour = 20;
   static const defaultMinute = 0;
-
-  static const _reminderEnabledKey = 'reminder_enabled';
-  static const _reminderHourKey = 'reminder_hour';
-  static const _reminderMinuteKey = 'reminder_minute';
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
@@ -143,9 +141,9 @@ class NotificationService {
   Future<({bool enabled, int hour, int minute})> loadReminderSettings() async {
     final prefs = await SharedPreferences.getInstance();
     return (
-      enabled: prefs.getBool(_reminderEnabledKey) ?? false,
-      hour: prefs.getInt(_reminderHourKey) ?? defaultHour,
-      minute: prefs.getInt(_reminderMinuteKey) ?? defaultMinute,
+      enabled: prefs.getBool(reminderEnabledKey) ?? false,
+      hour: prefs.getInt(reminderHourKey) ?? defaultHour,
+      minute: prefs.getInt(reminderMinuteKey) ?? defaultMinute,
     );
   }
 
@@ -155,8 +153,8 @@ class NotificationService {
     int? minute,
   }) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_reminderEnabledKey, enabled);
-    if (hour != null) await prefs.setInt(_reminderHourKey, hour);
-    if (minute != null) await prefs.setInt(_reminderMinuteKey, minute);
+    await prefs.setBool(reminderEnabledKey, enabled);
+    if (hour != null) await prefs.setInt(reminderHourKey, hour);
+    if (minute != null) await prefs.setInt(reminderMinuteKey, minute);
   }
 }

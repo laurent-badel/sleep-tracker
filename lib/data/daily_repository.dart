@@ -11,4 +11,5 @@ class DailyRepository {
   Stream<DailyEntry?> watchByDate(String date) => dao.watchByDate(date);
   Stream<List<DailyEntry>> watchAll() => dao.watchAll();
   Future<void> upsert(DailyEntriesCompanion entry) => dao.upsert(entry);
+  Future<DailyEntry?> getByDate(String date) => dao.getByDate(date);
 }

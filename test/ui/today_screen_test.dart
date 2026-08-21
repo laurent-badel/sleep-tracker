@@ -2,16 +2,22 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:sleep_tracker/data/daily_repository.dart';
 import 'package:sleep_tracker/data/database.dart';
 import 'package:sleep_tracker/ui/today_screen.dart';
 import 'package:sleep_tracker/utils/dates.dart';
+import 'package:sleep_tracker/viewmodels/feature_settings_controller.dart';
 import 'package:sleep_tracker/viewmodels/today_view_model.dart';
 
 void main() {
   testWidgets('Today: form renders, save persists and shows snackbar',
       (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final featureSettings = FeatureSettingsController();
+    await featureSettings.load();
+
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(db.close);
     final repo = DailyRepository(db.dailyDao);
@@ -20,6 +26,7 @@ void main() {
       MultiProvider(
         providers: [
           Provider.value(value: repo),
+          ChangeNotifierProvider.value(value: featureSettings),
           ChangeNotifierProvider(create: (_) => TodayViewModel(repo)),
         ],
         child: const MaterialApp(home: TodayScreen()),

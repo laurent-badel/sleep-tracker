@@ -4,41 +4,25 @@ import 'package:flutter/foundation.dart';
 
 import '../data/daily_repository.dart';
 import '../data/database.dart';
+import '../models/feature_def.dart';
 import '../utils/dates.dart';
+import 'feature_settings_controller.dart';
 
-/// The four tracked metrics (spec §3). `ratingOf` extracts the 0–5 rating for
-/// this metric from an entry; the painter receives it as a tear-off so it
-/// stays metric-agnostic.
-enum Metric {
-  sleep('Sleep'),
-  exercise('Exercise'),
-  schoolStress('School stress'),
-  screenUsage('Screen time');
-
-  const Metric(this.label);
-
-  final String label;
-
-  int ratingOf(DailyEntry e) => switch (this) {
-        Metric.sleep => e.sleepRating,
-        Metric.exercise => e.exerciseRating,
-        Metric.schoolStress => e.schoolStressRating,
-        Metric.screenUsage => e.screenUsageRating,
-      };
-
-  /// Rolling mean over the last [window] calendar days of [slots] (slots are
-  /// ascending with today last). Only days with entries count toward the
-  /// denominator — gaps are excluded. Returns null when the window has no data.
-  double? averageOf(List<DailyEntry?> slots, int window) {
-    final start = slots.length - window;
-    final values = <int>[];
-    for (var i = start < 0 ? 0 : start; i < slots.length; i++) {
-      final e = slots[i];
-      if (e != null) values.add(ratingOf(e));
+/// Rolling mean over the last [window] calendar days of [slots] (slots are
+/// ascending with today last). Only days with entries count toward the
+/// denominator — gaps are excluded. Returns null when the window has no data.
+double? averageOf(List<DailyEntry?> slots, FeatureDef feature, int window) {
+  final start = slots.length - window;
+  final values = <int>[];
+  for (var i = start < 0 ? 0 : start; i < slots.length; i++) {
+    final e = slots[i];
+    if (e != null) {
+      final v = feature.getValue(e);
+      if (v != null) values.add(v);
     }
-    if (values.isEmpty) return null;
-    return values.reduce((a, b) => a + b) / values.length;
   }
+  if (values.isEmpty) return null;
+  return values.reduce((a, b) => a + b) / values.length;
 }
 
 /// Builds the chart slots: a fixed-length list (default 30) in **ascending**
@@ -68,43 +52,52 @@ int? computeStreak(List<DailyEntry> entries) {
 }
 
 /// Subscribes to `watchAll()` once, over full history (spec §3), and derives
-/// everything the Stats screen needs on each emission.
+/// everything the Stats screen needs on each emission. Also listens to the
+/// [FeatureSettingsController] so toggling features updates the cards live.
 class StatsViewModel extends ChangeNotifier {
-  StatsViewModel(this._repo) {
+  StatsViewModel(this._repo, this._featureSettings) {
     _sub = _repo.watchAll().listen((entries) {
-      _recompute(entries);
-      notifyListeners();
+      _entries = entries;
+      _recompute();
     });
+    _featureSettings.addListener(_recompute);
   }
 
   final DailyRepository _repo;
+  final FeatureSettingsController _featureSettings;
   StreamSubscription<List<DailyEntry>>? _sub;
+  List<DailyEntry> _entries = const [];
 
   bool loaded = false; // gate: don't build stats before the first emission
   int entryCount = 0;
   int? streak; // null → "—" (spec §3)
-  Map<Metric, List<DailyEntry?>> slots = const {};
-  Map<Metric, double?> avg7 = const {};
-  Map<Metric, double?> avg30 = const {};
+  List<FeatureDef> features = const [];
+  Map<String, List<DailyEntry?>> slots = const {}; // feature key → slots
+  Map<String, double?> avg7 = const {};
+  Map<String, double?> avg30 = const {};
 
-  void _recompute(List<DailyEntry> entries) {
+  void _recompute() {
     loaded = true;
+    final entries = _entries;
     entryCount = entries.length;
     streak = computeStreak(entries);
+    features = _featureSettings.enabledFeatures;
     slots = {
-      for (final m in Metric.values) m: buildSlots(entries),
+      for (final f in features) f.key: buildSlots(entries),
     };
     avg7 = {
-      for (final m in Metric.values) m: m.averageOf(slots[m]!, 7),
+      for (final f in features) f.key: averageOf(slots[f.key]!, f, 7),
     };
     avg30 = {
-      for (final m in Metric.values) m: m.averageOf(slots[m]!, 30),
+      for (final f in features) f.key: averageOf(slots[f.key]!, f, 30),
     };
+    notifyListeners();
   }
 
   @override
   void dispose() {
     _sub?.cancel();
+    _featureSettings.removeListener(_recompute);
     super.dispose();
   }
 }

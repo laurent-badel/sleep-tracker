@@ -3,13 +3,15 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../data/daily_repository.dart';
+import '../viewmodels/feature_settings_controller.dart';
 import '../viewmodels/today_view_model.dart';
 import 'settings_screen.dart';
 import 'widgets/entry_editor_form.dart';
 
 /// Tab 0 (spec §3). The ViewModel owns the date + rollover; this screen just
-/// renders it. The `ValueKey(vm.today)` re-seeds the form on midnight
-/// rollover (free, race-free re-hydration).
+/// renders it. The form is keyed on date + enabled-feature set so both a
+/// midnight rollover *and* a feature-selection change discard the old `State`
+/// and re-seed (free, race-free re-hydration).
 class TodayScreen extends StatelessWidget {
   const TodayScreen({super.key});
 
@@ -17,6 +19,7 @@ class TodayScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final vm = context.watch<TodayViewModel>();
     final repo = context.read<DailyRepository>();
+    final features = context.watch<FeatureSettingsController>().enabledFeatures;
 
     // Display uses a human-readable format; the ISO key stays storage-only.
     final displayDate = DateFormat.yMMMMd().format(DateTime.parse(vm.today));
@@ -44,9 +47,12 @@ class TodayScreen extends StatelessWidget {
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: EntryEditorForm(
-                key: ValueKey(vm.today),
+                key: ValueKey(
+                  '${vm.today}|${features.map((f) => f.key).join(',')}',
+                ),
                 date: vm.today,
                 initial: vm.currentEntry,
+                features: features,
                 onSave: repo.upsert,
                 onSaved: () {
                   ScaffoldMessenger.of(context).showSnackBar(

@@ -6,7 +6,7 @@
          (plugin README, v16+ — spec §5). -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <application
-        android:label="sleep_tracker"
+        android:label="Sleep Tracker"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

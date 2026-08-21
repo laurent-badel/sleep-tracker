@@ -9,6 +9,7 @@ import 'app.dart';
 import 'data/daily_repository.dart';
 import 'data/database.dart';
 import 'services/notification_service.dart';
+import 'viewmodels/feature_settings_controller.dart';
 import 'viewmodels/stats_view_model.dart';
 import 'viewmodels/today_view_model.dart';
 
@@ -58,17 +59,25 @@ Future<void> main() async {
 
   final container = AppContainer.create();
 
+  // Global feature selection (spec §0) — loaded before first frame.
+  final featureSettings = FeatureSettingsController();
+  await featureSettings.load();
+
   runApp(
     MultiProvider(
       providers: [
         Provider.value(value: container.repository),
         ChangeNotifierProvider.value(value: navigationManager),
         Provider.value(value: notifications),
+        ChangeNotifierProvider.value(value: featureSettings),
         ChangeNotifierProvider(
           create: (_) => TodayViewModel(container.repository),
         ),
         ChangeNotifierProvider(
-          create: (_) => StatsViewModel(container.repository),
+          create: (_) => StatsViewModel(
+            container.repository,
+            featureSettings,
+          ),
         ),
       ],
       child: const App(),

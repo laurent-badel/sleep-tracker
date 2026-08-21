@@ -1,17 +1,21 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:sleep_tracker/data/database.dart';
+import 'package:sleep_tracker/models/feature_def.dart';
 import 'package:sleep_tracker/utils/dates.dart';
 import 'package:sleep_tracker/viewmodels/stats_view_model.dart';
 
-DailyEntry entry(String date, {int sleep = 0}) => DailyEntry(
+DailyEntry entry(String date, {int? sleep, int? mood}) => DailyEntry(
       date: date,
       sleepRating: sleep,
-      exerciseRating: 0,
-      schoolStressRating: 0,
-      screenUsageRating: 0,
+      moodRating: mood,
       updatedAt: 0,
     );
+
+final sleepFeature =
+    allFeatures.firstWhere((f) => f.key == 'sleepRating');
+final moodFeature =
+    allFeatures.firstWhere((f) => f.key == 'moodRating');
 
 void main() {
   group('buildSlots', () {
@@ -41,7 +45,7 @@ void main() {
     });
   });
 
-  group('Metric.averageOf', () {
+  group('averageOf', () {
     test('averages only days with entries in the window', () {
       // today (4) + yesterday (2) → (4+2)/2
       final slots = buildSlots([
@@ -49,7 +53,7 @@ void main() {
         entry(dateKeyForDaysAgo(1), sleep: 2),
       ]);
 
-      final avg = Metric.sleep.averageOf(slots, 7);
+      final avg = averageOf(slots, sleepFeature, 7);
 
       expect(avg, 3.0);
     });
@@ -61,16 +65,26 @@ void main() {
         entry(dateKeyForDaysAgo(2), sleep: 5),
       ]);
 
-      final avg = Metric.sleep.averageOf(slots, 7);
+      final avg = averageOf(slots, sleepFeature, 7);
 
       expect(avg, 5.0);
+    });
+
+    test('excludes entries with a null value for the feature', () {
+      // today has sleep 5, yesterday logged but sleep null → avg 5.0
+      final slots = buildSlots([
+        entry(dateKeyForDaysAgo(0), sleep: 5),
+        entry(dateKeyForDaysAgo(1)),
+      ]);
+
+      expect(averageOf(slots, sleepFeature, 7), 5.0);
     });
 
     test('returns null when the window has no data', () {
       final slots = buildSlots([entry(dateKeyForDaysAgo(10), sleep: 3)]);
 
-      expect(Metric.sleep.averageOf(slots, 7), isNull);
-      expect(Metric.sleep.averageOf(slots, 30), 3.0);
+      expect(averageOf(slots, sleepFeature, 7), isNull);
+      expect(averageOf(slots, sleepFeature, 30), 3.0);
     });
   });
 
@@ -112,19 +126,15 @@ void main() {
     });
   });
 
-  test('Metric.ratingOf extracts the right column', () {
+  test('FeatureDef.getValue extracts the right column', () {
     final e = DailyEntry(
       date: '2026-08-21',
       sleepRating: 1,
-      exerciseRating: 2,
-      schoolStressRating: 3,
-      screenUsageRating: 4,
+      moodRating: 3,
       updatedAt: 0,
     );
 
-    expect(Metric.sleep.ratingOf(e), 1);
-    expect(Metric.exercise.ratingOf(e), 2);
-    expect(Metric.schoolStress.ratingOf(e), 3);
-    expect(Metric.screenUsage.ratingOf(e), 4);
+    expect(sleepFeature.getValue(e), 1);
+    expect(moodFeature.getValue(e), 3);
   });
 }

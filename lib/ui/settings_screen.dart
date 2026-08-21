@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/feature_def.dart';
 import '../services/notification_service.dart';
+import '../viewmodels/feature_settings_controller.dart';
 
 /// Reminder settings (spec §5). Toggle is **off** by default; time defaults
 /// to 20:00. On enable, permissions are requested first — if denied the
@@ -104,8 +106,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   trailing: const Icon(Icons.schedule),
                   onTap: _pickTime,
                 ),
+                const Divider(),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: Text(
+                    'Features',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Text(
+                    'Choose what to track. Disabling never deletes past data.',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
+                _FeaturesSection(),
               ],
             ),
+    );
+  }
+}
+
+class _FeaturesSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final controller = context.watch<FeatureSettingsController>();
+    if (!controller.loaded) {
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    return Column(
+      children: [
+        for (final f in allFeatures)
+          CheckboxListTile(
+            title: Text(f.label),
+            value: controller.enabledKeys.contains(f.key),
+            onChanged: (v) => controller.setEnabled(f.key, v ?? false),
+          ),
+      ],
     );
   }
 }

@@ -1,7 +1,8 @@
-import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 
+import '../../data/companion_builder.dart';
 import '../../data/database.dart';
+import '../../models/feature_def.dart';
 import 'rating_picker.dart';
 
 /// One self-contained editor used full-screen on Today **and** inside the
@@ -15,6 +16,7 @@ import 'rating_picker.dart';
 class EntryEditorForm extends StatefulWidget {
   final String date; // the date being edited (today or historical)
   final DailyEntry? initial; // null → new entry: ratings default 0, note ''
+  final List<FeatureDef> features; // the currently-enabled features
   final Future<void> Function(DailyEntriesCompanion) onSave;
   final VoidCallback? onSaved; // e.g. SnackBar (Today) or Navigator.pop (History)
 
@@ -22,6 +24,7 @@ class EntryEditorForm extends StatefulWidget {
     super.key,
     required this.date,
     this.initial,
+    required this.features,
     required this.onSave,
     this.onSaved,
   });
@@ -31,10 +34,7 @@ class EntryEditorForm extends StatefulWidget {
 }
 
 class _EntryEditorFormState extends State<EntryEditorForm> {
-  late int _sleepRating;
-  late int _exerciseRating;
-  late int _schoolStressRating;
-  late int _screenUsageRating;
+  late final Map<String, int> _ratings; // key → 0 .. scaleLength-1
   late final TextEditingController _noteController;
   bool _saving = false;
 
@@ -42,10 +42,11 @@ class _EntryEditorFormState extends State<EntryEditorForm> {
   void initState() {
     super.initState();
     final initial = widget.initial;
-    _sleepRating = initial?.sleepRating ?? 0;
-    _exerciseRating = initial?.exerciseRating ?? 0;
-    _schoolStressRating = initial?.schoolStressRating ?? 0;
-    _screenUsageRating = initial?.screenUsageRating ?? 0;
+    _ratings = {
+      for (final f in widget.features)
+        f.key: (initial == null ? 0 : (f.getValue(initial) ?? 0))
+            .clamp(0, f.scaleLength - 1),
+    };
     _noteController = TextEditingController(text: initial?.note ?? '');
   }
 
@@ -62,16 +63,18 @@ class _EntryEditorFormState extends State<EntryEditorForm> {
     // Normalize the note: trim; store null if empty (never '').
     final note = _noteController.text.trim();
 
-    // Clamp is the single enforcement point (spec Gotchas) — asserts are
-    // compiled out in release, so this protects production.
-    final companion = DailyEntriesCompanion(
-      date: Value(widget.date),
-      sleepRating: Value(_sleepRating.clamp(0, 5)),
-      exerciseRating: Value(_exerciseRating.clamp(0, 5)),
-      schoolStressRating: Value(_schoolStressRating.clamp(0, 5)),
-      screenUsageRating: Value(_screenUsageRating.clamp(0, 5)),
-      note: Value(note.isEmpty ? null : note), // Value(null) clears; never Value.absent()
-      updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
+    // Clamp each rating to its scale before building the companion — the
+    // single enforcement point (spec Gotchas); asserts are compiled out in
+    // release, so this protects production.
+    final clamped = {
+      for (final f in widget.features)
+        f.key: (_ratings[f.key] ?? 0).clamp(0, f.scaleLength - 1),
+    };
+
+    final companion = buildEntryCompanion(
+      date: widget.date,
+      enabledRatings: clamped,
+      note: note.isEmpty ? null : note,
     );
 
     await widget.onSave(companion);
@@ -95,37 +98,17 @@ class _EntryEditorFormState extends State<EntryEditorForm> {
               children: [
                 Text('Metrics', style: theme.textTheme.titleMedium),
                 const Divider(height: 24),
-                RatingPicker(
-                  label: 'Sleep',
-                  lowCaption: 'poor',
-                  highCaption: 'great',
-                  value: _sleepRating,
-                  onChanged: (v) => setState(() => _sleepRating = v),
-                ),
-                const SizedBox(height: 16),
-                RatingPicker(
-                  label: 'Exercise',
-                  lowCaption: 'none',
-                  highCaption: 'a lot',
-                  value: _exerciseRating,
-                  onChanged: (v) => setState(() => _exerciseRating = v),
-                ),
-                const SizedBox(height: 16),
-                RatingPicker(
-                  label: 'School stress',
-                  lowCaption: 'nothing special',
-                  highCaption: 'very stressful',
-                  value: _schoolStressRating,
-                  onChanged: (v) => setState(() => _schoolStressRating = v),
-                ),
-                const SizedBox(height: 16),
-                RatingPicker(
-                  label: 'Screen time',
-                  lowCaption: 'no screens',
-                  highCaption: 'heavy use',
-                  value: _screenUsageRating,
-                  onChanged: (v) => setState(() => _screenUsageRating = v),
-                ),
+                for (final f in widget.features) ...[
+                  RatingPicker(
+                    label: f.label,
+                    lowCaption: f.lowCaption,
+                    highCaption: f.highCaption,
+                    scaleLength: f.scaleLength,
+                    value: _ratings[f.key] ?? 0,
+                    onChanged: (v) => setState(() => _ratings[f.key] = v),
+                  ),
+                  const SizedBox(height: 16),
+                ],
               ],
             ),
           ),
