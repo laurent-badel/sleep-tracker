@@ -89,6 +89,27 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enable notifications in system settings to receive reminders';
 
   @override
+  String get settingsLanguage => 'Language';
+
+  @override
+  String get settingsLanguageSystem => 'System default';
+
+  @override
+  String get languageEn => 'English';
+
+  @override
+  String get languageFr => 'Français';
+
+  @override
+  String get languageDe => 'Deutsch';
+
+  @override
+  String get languageJa => '日本語';
+
+  @override
+  String get languageIt => 'Italiano';
+
+  @override
   String get notifTitle => 'Daily check-in';
 
   @override

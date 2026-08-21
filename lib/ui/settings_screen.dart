@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../app.dart' show languagePreference;
 import '../l10n/feature_strings.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../models/feature_def.dart';
 import '../services/notification_service.dart';
+import '../utils/prefs.dart';
 import '../viewmodels/feature_settings_controller.dart';
 
 /// Reminder settings (spec §5). Toggle is **off** by default; time defaults
@@ -105,6 +107,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onTap: _pickTime,
                 ),
                 const Divider(),
+                _LanguageSection(),
+                const Divider(),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                   child: Text(
@@ -123,6 +127,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
     );
+  }
+}
+
+/// Phase 8: in-app language picker. 'system' restores device-locale following.
+/// Persists to `selected_language` and, crucially, re-schedules the reminder
+/// so notifications use the freshly resolved strings (spec Phase 8 caveat).
+class _LanguageSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final current = languagePreference.value;
+
+    final options = <(String, String)>[
+      (systemLanguageCode, l10n.settingsLanguageSystem),
+      ('en', l10n.languageEn),
+      ('fr', l10n.languageFr),
+      ('de', l10n.languageDe),
+      ('ja', l10n.languageJa),
+      ('it', l10n.languageIt),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Text(
+            l10n.settingsLanguage,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+        RadioGroup<String>(
+          groupValue: current,
+          onChanged: (value) => _select(context, value),
+          child: Column(
+            children: [
+              for (final (code, label) in options)
+                RadioListTile<String>(
+                  title: Text(label),
+                  value: code,
+                  dense: true,
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _select(BuildContext context, String? code) async {
+    if (code == null || code == languagePreference.value) return;
+    languagePreference.value = code;
+    await saveSelectedLanguage(code);
+    if (!context.mounted) return;
+    // Critical (spec Phase 8): notifications bake strings at schedule time —
+    // cancel + re-schedule so they match the new UI language immediately.
+    final notifications = context.read<NotificationService>();
+    await notifications.rescheduleFromSettings();
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).todaySaved)),
+      );
+    }
   }
 }
 

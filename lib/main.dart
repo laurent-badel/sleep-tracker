@@ -9,6 +9,7 @@ import 'app.dart';
 import 'data/daily_repository.dart';
 import 'data/database.dart';
 import 'services/notification_service.dart';
+import 'utils/prefs.dart';
 import 'viewmodels/feature_settings_controller.dart';
 import 'viewmodels/stats_view_model.dart';
 import 'viewmodels/today_view_model.dart';
@@ -62,6 +63,10 @@ Future<void> main() async {
   // Global feature selection (spec §0) — loaded before first frame.
   final featureSettings = FeatureSettingsController();
   await featureSettings.load();
+
+  // In-app language override (Phase 8) — restore the saved preference so the
+  // first frame renders in the right language.
+  languagePreference.value = await loadSelectedLanguage();
 
   runApp(
     MultiProvider(

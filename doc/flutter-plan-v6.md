@@ -27,7 +27,7 @@ These are **closed** — do not re-litigate them during implementation:
 - **No custom/user-defined features** (arbitrary types, EAV schema) — deliberately out of scope. Fixed-catalog only.
 - **Android minSdk:** 26 (Android 8.0+). **Core library desugaring is still enabled** — `flutter_local_notifications`' AAR declares `requiresDesugaring=true` and AGP fails the build without it, even at minSdk 26. At API 26+ `java.time` is native, so desugaring is effectively a compile-time no-op.
 - **Backup/export:** out of scope. **Localization:** in scope as of Phase 7 — `en` (template), `fr`, `de`, `ja`, `it`.
-- **Locale resolution:** system-driven (default `MaterialApp` resolution). **No in-app language picker in this phase** (future work — see Implementation Notes).
+- **Locale resolution:** system-driven by default, with an in-app override via the Settings language picker (Phase 8). Saved as `selected_language` ('system' or an explicit code); 'system' = follow the device locale.
 - **App brand name stays untranslated** — `MaterialApp.title` remains a constant.
 - **Storage formats are never localized:** ISO `yyyy-MM-dd` date keys and epoch-millis `updatedAt` are fixed patterns. Only *display* formatting is locale-aware.
 - **Localization resolution happens only in the widget layer** (where a `BuildContext` exists). ViewModels, `NotificationService`, and const data (`FeatureDef`) never hold localized strings.
@@ -650,6 +650,65 @@ Minimal screen behind the gear icon on Today; all strings from ARB:
 5. **Notifications:** `lookupAppLocalizations(PlatformDispatcher.instance.locale)` for title/body.
 6. **Translations:** author `app_fr.arb`, `app_de.arb`, `app_ja.arb`, `app_it.arb` — complete key sets; `untranslated.txt` empty before shipping.
 7. **Tests:** locale smoke tests (pump the app under each supported locale with the real delegates).
+
+### Addendum: In-App Language Picker (Phase 8)
+
+> Integration note: replace the §0 bullet "**Locale resolution:** system-driven … no in-app language picker in this phase" with: "**Locale resolution:** system-driven by default, with an in-app override via the Settings language picker (Phase 8)."
+
+This relaxes the v9 "system-driven only" freeze, allowing users to override the device locale from within the app. The architecture requires zero restructuring because localization resolution was already confined to the widget layer and the notification service.
+
+**Storage & State:**
+Add a new `shared_preferences` key `selected_language` (String). Valid values are `'system'` (default) or an explicit language code (`'en'`, `'fr'`, `'de'`, `'ja'`, `'it'`).
+Expose this via a root-level `ValueNotifier<String>` (e.g., `languagePreference`) — a plain global like `navigationManager`, or provided alongside the other root dependencies. Initialize it from the pref in `main()` before `runApp`, and write the pref back whenever the user changes it.
+
+**`MaterialApp` Wiring:**
+Wrap `MaterialApp` in a `ValueListenableBuilder` to react to changes. Map the `'system'` string to `null` so Flutter falls back to its default `supportedLocales` resolution; otherwise, construct a `Locale`.
+
+<CODE lang="dart">
+ValueListenableBuilder<String>(
+  valueListenable: languagePreference,
+  builder: (context, langCode, _) {
+    final Locale? appLocale = (langCode == 'system') ? null : Locale(langCode);
+    return MaterialApp(
+      title: 'Daily Wellness Tracker',
+      locale: appLocale, // null = follow system
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      // ... theme, home, etc.
+    );
+  },
+)
+</CODE>
+
+**Notification Service Update:**
+The notification service previously used `PlatformDispatcher.instance.locale`. It must now read the saved preference to ensure notifications match the app's UI language, not just the OS language.
+
+<CODE lang="dart">
+Locale resolveNotificationLocale(String savedLangCode) {
+  if (savedLangCode == 'system') {
+    return PlatformDispatcher.instance.locale;
+  }
+  return Locale(savedLangCode);
+}
+
+// Inside scheduleReminder():
+final l = lookupAppLocalizations(resolveNotificationLocale(savedLangCode));
+// ... use l.notifTitle, l.notifBody
+</CODE>
+
+**Settings UI:**
+Add a "Language" section to the Settings screen (above or below Features). Use a list of `RadioListTile`s or a `DropdownButton` mapped to the supported languages plus a "System Default" option.
+
+**Critical Caveat — Notification Rescheduling:**
+Changing the in-app language updates the UI instantly, but the OS caches the scheduled notification's title/body strings at the time `zonedSchedule` was called. When the user saves a new language preference in Settings, the UI **must** explicitly call `notificationService.rescheduleFromSettings()` immediately afterward. This cancels and re-fires the schedule with the freshly resolved localized strings, preventing the user from seeing English notifications while using the app in Japanese.
+
+**Build Order:** Add as **Phase 8** (or integrate into Phase 7). It is strictly a UI/Settings addition and touches no data layer or ViewModels.
+
+**Acceptance Criteria (additions):**
+- Selecting a language in Settings switches the UI immediately, without an app restart.
+- Selecting "System Default" restores device-locale following.
+- The choice persists across app restarts via `selected_language`.
+- After a language change, the next scheduled reminder fires with title/body in the newly selected language (confirms the reschedule-on-change path).
 
 ### Acceptance Criteria
 

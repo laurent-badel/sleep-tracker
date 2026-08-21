@@ -1,3 +1,5 @@
+import 'dart:ui' show Locale;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -5,7 +7,6 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../l10n/generated/app_localizations.dart';
 import '../utils/prefs.dart';
-
 /// Wraps `flutter_local_notifications` + `shared_preferences` reminder
 /// settings (spec §5).
 ///
@@ -29,8 +30,16 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
-  AppLocalizations _l10n() =>
-      lookupAppLocalizations(PlatformDispatcher.instance.locale);
+  /// Phase 8: notifications follow the in-app language preference (saved
+  /// `selected_language`), falling back to the OS locale on 'system'.
+  /// Async because it reads the pref — callers already await scheduling.
+  Future<AppLocalizations> _l10n() async {
+    final saved = await loadSelectedLanguage();
+    final locale = saved == systemLanguageCode
+        ? PlatformDispatcher.instance.locale
+        : Locale(saved);
+    return lookupAppLocalizations(locale);
+  }
 
   /// Registers both tap callbacks (spec §5, deep-link entry points 1 & 2).
   /// `onDidReceiveBackgroundNotificationResponse` must be a top-level
@@ -101,7 +110,7 @@ class NotificationService {
         ? AndroidScheduleMode.exactAllowWhileIdle
         : AndroidScheduleMode.inexactAllowWhileIdle;
 
-    final l10n = _l10n();
+    final l10n = await _l10n();
 
     await _plugin.zonedSchedule(
       id: notificationId,

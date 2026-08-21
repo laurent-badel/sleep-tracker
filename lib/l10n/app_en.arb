@@ -52,6 +52,14 @@
   "settingsFeaturesSubtitle": "Choose what to track. Disabling never deletes past data.",
   "settingsPermissionDenied": "Enable notifications in system settings to receive reminders",
 
+  "settingsLanguage": "Language",
+  "settingsLanguageSystem": "System default",
+  "languageEn": "English",
+  "languageFr": "Français",
+  "languageDe": "Deutsch",
+  "languageJa": "日本語",
+  "languageIt": "Italiano",
+
   "notifTitle": "Daily check-in",
   "notifBody": "Log your sleep, exercise, stress, and screen time.",
   "notifChannelName": "Daily reminder",
