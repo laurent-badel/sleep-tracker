@@ -9,6 +9,7 @@ A daily wellness tracker for Android and iOS, built with Flutter. Log your sleep
 - **History with backfill.** Browse past days and edit any entry. The plus button lets you add or edit a specific past date.
 - **Stats view.** Each feature gets a 30-day chart. Ordinal ratings are normalized to a common 0-10 scale so different scales are comparable at a glance, with 7- and 30-day averages and a current streak. Boolean features show a frequency count (for example, 22 / 30 days).
 - **Daily reminder.** Optional notification at a time you choose. Defaults to inexact timing on Android, so the system may deliver it a few minutes late.
+- **CSV export.** Export your full history to a CSV file from Settings and share it through the OS share sheet (email, cloud storage, etc.). The file includes every column for every date, regardless of which features are currently enabled, so a disabled feature's history is never lost. Column headers are stable, raw field names (for example, `sleepRating`), so the file looks the same in any language.
 - **Localized UI.** English, French, German, Japanese, and Italian, with an in-app language picker. Choosing "System default" follows the device language.
 - **Privacy.** All data stays on the device in a local SQLite database. No accounts, no cloud, no analytics.
 
@@ -58,5 +59,5 @@ All user-facing strings live in ARB files under `lib/l10n/`. `app_en.arb` is the
 - Features come from a fixed catalog. Custom or user-defined metrics are not supported.
 - The daily reminder uses inexact scheduling on Android and does not request the exact-alarm permission, so it may be delivered late under aggressive battery optimization.
 - If the device language is not one of the five supported locales, the app falls back to English unless a language is chosen explicitly in Settings.
-- Data lives in a local SQLite database. Uninstalling the app removes it; there is no export or backup feature.
+- Data lives in a local SQLite database. Uninstalling the app removes it. CSV export covers a full dump of the data, but there is no incremental backup, restore, or import feature.
 

@@ -12,4 +12,5 @@ class DailyRepository {
   Stream<List<DailyEntry>> watchAll() => dao.watchAll();
   Future<void> upsert(DailyEntriesCompanion entry) => dao.upsert(entry);
   Future<DailyEntry?> getByDate(String date) => dao.getByDate(date);
+  Future<List<DailyEntry>> getAllForExport() => dao.getAllForExport();
 }

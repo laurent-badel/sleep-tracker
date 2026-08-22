@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../app.dart' show languagePreference;
 import '../l10n/feature_strings.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../models/feature_def.dart';
+import '../services/export_service.dart';
 import '../services/notification_service.dart';
 import '../utils/prefs.dart';
 import '../viewmodels/feature_settings_controller.dart';
@@ -85,6 +87,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  /// Phase 10: generate the CSV and hand it to the OS share sheet. No in-app
+  /// file destination — the OS owns the file after sharing.
+  Future<void> _handleExport(AppLocalizations l10n) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final file = await context.read<ExportService>().exportToCsv();
+    if (!mounted) return;
+    if (file == null) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.exportNoData)));
+      return;
+    }
+    await SharePlus.instance.share(
+      ShareParams(files: [XFile(file.path)], subject: l10n.exportShareSubject),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -124,6 +141,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
                 _FeaturesSection(),
+                const Divider(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: Text(
+                    l10n.settingsExportHeader,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                  child: Text(
+                    l10n.settingsExportPrivacyWarning,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: FilledButton.icon(
+                      icon: const Icon(Icons.download),
+                      label: Text(l10n.settingsExportButton),
+                      onPressed: () => _handleExport(l10n),
+                    ),
+                  ),
+                ),
               ],
             ),
     );

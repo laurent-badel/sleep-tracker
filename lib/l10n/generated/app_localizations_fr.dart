@@ -110,6 +110,23 @@ class AppLocalizationsFr extends AppLocalizations {
       'Activez les notifications dans les réglages système pour recevoir des rappels';
 
   @override
+  String get settingsExportHeader => 'Exporter les données';
+
+  @override
+  String get settingsExportButton => 'Exporter en CSV';
+
+  @override
+  String get settingsExportPrivacyWarning =>
+      'Les fichiers exportés sont en texte brut et ne sont pas chiffrés. Ils contiennent des données sensibles comme les notes et les journaux de médicaments.';
+
+  @override
+  String get exportNoData => 'Aucune donnée à exporter pour le moment.';
+
+  @override
+  String get exportShareSubject =>
+      'Export de l\'application Daily Wellness Tracker';
+
+  @override
   String get settingsLanguage => 'Langue';
 
   @override

@@ -106,6 +106,22 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsPermissionDenied => 'リマインダーを受け取るにはシステム設定で通知を有効にしてください';
 
   @override
+  String get settingsExportHeader => 'データのエクスポート';
+
+  @override
+  String get settingsExportButton => 'CSVにエクスポート';
+
+  @override
+  String get settingsExportPrivacyWarning =>
+      'エクスポートされたファイルは平文で暗号化されていません。メモや服薬記録などの機密データが含まれます。';
+
+  @override
+  String get exportNoData => 'まだエクスポートできるデータがありません。';
+
+  @override
+  String get exportShareSubject => 'デイリーウェルネストラッカーのエクスポート';
+
+  @override
   String get settingsLanguage => '言語';
 
   @override

@@ -1027,6 +1027,168 @@ Format the number with `NumberFormat.decimalPattern(localeTag).formatAsFixed(1)`
 - Windows with no data still show `"—"` (no stray `"/ 10"` suffix).
 - Streak calculation is unchanged (counts any-entry days, ignores values).
 
+### Addendum: CSV Export (Phase 10)
+
+> Integration notes — this addendum amends: `pubspec.yaml` (new dependencies), DAO (one-shot export query), `AppContainer`/`main.dart` (wiring `ExportService`), Settings screen UI, and adds 5 i18n keys. It requires no schema changes or migrations.
+
+**Design decisions (frozen):**
+- **Full raw dump:** Export *all* columns for *all* rows, regardless of which features are currently enabled. This is consistent with the `Value.absent()` philosophy (Phase 6) — disabling a feature hides it from the UI but never deletes its historical data, and the export should reflect the complete historical record.
+- **Stable, unlocalized headers:** CSV column headers use the exact Drift column keys (`sleepRating`, `moodRating`, etc.), not localized display strings. This extends the Phase 7 "storage formats are never localized" rule, ensuring the file is stable and diffable across exports regardless of the device's current language.
+- **Date formatting:** `date` stays exactly as stored (`yyyy-MM-dd`). `updatedAt` (stored as epoch millis) is converted to ISO 8601 at export time for human readability.
+- **No in-app file picker:** The app generates the file and hands it to the OS share sheet (`share_plus`). The app does not manage file destinations.
+- **Temp file lifecycle:** Files are written to `getTemporaryDirectory()`. The OS is responsible for cleanup; the app does not attempt to delete the file after the share sheet closes.
+
+#### Dependencies
+
+Add to `pubspec.yaml`:
+
+<CODE lang="yaml">
+dependencies:
+  # ... existing ...
+  csv: ^6.x           # proper quoting/escaping for free-text notes
+  share_plus: ^10.x   # OS share sheet integration
+</CODE>
+
+(Pin exact versions after `pub get`.)
+
+#### DAO addition
+
+Add a one-shot query for the export snapshot. This is distinct from `watchAll()`, which is a live stream — export needs a single atomic read.
+
+<CODE lang="dart">
+// in DailyDao
+Future<List<DailyEntry>> getAllForExport() =>
+    (select(dailyEntries)..orderBy([(t) => OrderingTerm.asc(t.date)]))
+        .get();
+
+// in DailyRepository
+Future<List<DailyEntry>> getAllForExport() => dao.getAllForExport();
+</CODE>
+
+#### `ExportService`
+
+<CODE lang="dart">
+// services/export_service.dart
+import 'dart:convert';
+import 'dart:io';
+import 'package:csv/csv.dart';
+import 'package:intl/intl.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import '../data/daily_repository.dart';
+
+class ExportService {
+  final DailyRepository repository;
+  ExportService(this.repository);
+
+  static const _columns = [
+    'date', 'sleepRating', 'exerciseRating', 'schoolStressRating', 'screenUsageRating',
+    'moodRating', 'energyRating', 'nutritionRating', 'physicalRating',
+    'socialRating', 'productivityRating', 'waterRating', 'caffeineRating',
+    'alcoholRating', 'smokingRating', 'medicationTaken', 'workdayFlag',
+    'note', 'updatedAt',
+  ];
+
+  /// Returns null if there's nothing to export.
+  Future<File?> exportToCsv() async {
+    final entries = await repository.getAllForExport();
+    if (entries.isEmpty) return null;
+
+    final rows = <List<dynamic>>[_columns];
+    for (final e in entries) {
+      rows.add([
+        e.date,
+        e.sleepRating, e.exerciseRating, e.schoolStressRating, e.screenUsageRating,
+        e.moodRating, e.energyRating, e.nutritionRating, e.physicalRating,
+        e.socialRating, e.productivityRating, e.waterRating, e.caffeineRating,
+        e.alcoholRating, e.smokingRating, e.medicationTaken, e.workdayFlag,
+        e.note ?? '',
+        DateTime.fromMillisecondsSinceEpoch(e.updatedAt).toIso8601String(),
+      ]);
+    }
+
+    final csvString = const ListToCsvConverter().convert(rows);
+    final dir = await getTemporaryDirectory();
+    final ts = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+    final file = File(p.join(dir.path, 'wellness_export_$ts.csv'));
+
+    // UTF-8 BOM: critical for Excel to correctly read non-ASCII characters
+    // (accents, CJK, emoji) in the note field. Google Sheets ignores it harmlessly.
+    await file.writeAsBytes([0xEF, 0xBB, 0xBF, ...utf8.encode(csvString)]);
+    return file;
+  }
+}
+</CODE>
+
+Wire `ExportService` into `AppContainer` and provide it via `Provider.value` in `main.dart`, exactly like `NotificationService`.
+
+#### Settings UI & Privacy Disclosure
+
+Add an "Export Data" section to the Settings screen, below Features.
+
+<CODE lang="dart">
+// Inside Settings screen build method
+final l = AppLocalizations.of(context);
+final theme = Theme.of(context);
+
+// ...
+Text(l.settingsExportHeader, style: theme.textTheme.titleMedium),
+const SizedBox(height: 4),
+Text(l.settingsExportPrivacyWarning, style: theme.textTheme.bodySmall),
+const SizedBox(height: 12),
+FilledButton.icon(
+  icon: const Icon(Icons.download),
+  label: Text(l.settingsExportButton),
+  onPressed: () => _handleExport(context, l),
+),
+</CODE>
+
+<CODE lang="dart">
+Future<void> _handleExport(BuildContext context, AppLocalizations l) async {
+  final messenger = ScaffoldMessenger.of(context);
+  final file = await context.read<ExportService>().exportToCsv();
+  if (file == null) {
+    messenger.showSnackBar(SnackBar(content: Text(l.exportNoData)));
+    return;
+  }
+  
+  // Note: share_plus v10+ changed the API. Verify against the pinned version's README.
+  // Older majors used Share.shareXFiles([XFile(file.path)], subject: ...);
+  // Newer majors use SharePlus.instance.share(ShareParams(files: [...], subject: ...));
+  await SharePlus.instance.share(ShareParams(
+    files: [XFile(file.path)],
+    subject: l.exportShareSubject,
+  ));
+}
+</CODE>
+
+**Privacy Disclosure:** The UI *must* include a localized warning string (`settingsExportPrivacyWarning`) near the button, e.g., "Exported files are plain text and are not encrypted. They contain sensitive data like notes and medication logs." Once the file leaves the app via the OS share sheet, it is outside the app's control.
+
+#### i18n keys (all five locales, `untranslated.txt` gate applies)
+
+- `settingsExportHeader` — "Export Data"
+- `settingsExportButton` — "Export to CSV"
+- `settingsExportPrivacyWarning` — "Exported files are plain text and not encrypted. They contain sensitive data like notes and medication logs."
+- `exportNoData` — "No data to export yet."
+- `exportShareSubject` — "Daily Wellness Tracker Export"
+
+#### Build order — Phase 10
+
+1. Add `csv` and `share_plus` to `pubspec.yaml`.
+2. Add `getAllForExport()` to DAO and Repository.
+3. Implement `ExportService` and wire into `AppContainer`/`main.dart`.
+4. Add Settings UI section with privacy warning and export button.
+5. Add 5 ARB keys ×5 locales; verify `untranslated.txt` is empty.
+
+#### Acceptance criteria (additions)
+
+- Tapping Export with no data shows the `exportNoData` snackbar and does not open the share sheet.
+- Tapping Export with data generates a CSV file and opens the native OS share sheet.
+- Opening the CSV in Excel correctly displays non-ASCII characters (e.g., Japanese notes, French accents, emoji) without garbling (confirms UTF-8 BOM).
+- Opening the CSV in a plain text editor shows stable English column headers (`sleepRating`, etc.) regardless of the device's system language.
+- The `updatedAt` column contains ISO 8601 strings, not raw epoch integers.
+- The privacy warning text is visible on the Settings screen before the user taps Export.
+
 ### Acceptance Criteria
 
 - Saving from Today updates History and Stats automatically.

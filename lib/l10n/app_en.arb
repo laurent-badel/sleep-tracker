@@ -76,6 +76,12 @@
   "settingsFeaturesSubtitle": "Choose what to track. Disabling never deletes past data.",
   "settingsPermissionDenied": "Enable notifications in system settings to receive reminders",
 
+  "settingsExportHeader": "Export Data",
+  "settingsExportButton": "Export to CSV",
+  "settingsExportPrivacyWarning": "Exported files are plain text and are not encrypted. They contain sensitive data like notes and medication logs.",
+  "exportNoData": "No data to export yet.",
+  "exportShareSubject": "Daily Wellness Tracker Export",
+
   "settingsLanguage": "Language",
   "settingsLanguageSystem": "System default",
   "languageEn": "English",

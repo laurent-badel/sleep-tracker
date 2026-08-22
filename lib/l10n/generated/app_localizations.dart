@@ -266,6 +266,36 @@ abstract class AppLocalizations {
   /// **'Enable notifications in system settings to receive reminders'**
   String get settingsPermissionDenied;
 
+  /// No description provided for @settingsExportHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Data'**
+  String get settingsExportHeader;
+
+  /// No description provided for @settingsExportButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Export to CSV'**
+  String get settingsExportButton;
+
+  /// No description provided for @settingsExportPrivacyWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Exported files are plain text and are not encrypted. They contain sensitive data like notes and medication logs.'**
+  String get settingsExportPrivacyWarning;
+
+  /// No description provided for @exportNoData.
+  ///
+  /// In en, this message translates to:
+  /// **'No data to export yet.'**
+  String get exportNoData;
+
+  /// No description provided for @exportShareSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Wellness Tracker Export'**
+  String get exportShareSubject;
+
   /// No description provided for @settingsLanguage.
   ///
   /// In en, this message translates to:

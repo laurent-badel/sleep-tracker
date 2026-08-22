@@ -110,6 +110,22 @@ class AppLocalizationsIt extends AppLocalizations {
       'Abilita le notifiche nelle impostazioni di sistema per ricevere promemoria';
 
   @override
+  String get settingsExportHeader => 'Esporta dati';
+
+  @override
+  String get settingsExportButton => 'Esporta in CSV';
+
+  @override
+  String get settingsExportPrivacyWarning =>
+      'I file esportati sono in testo semplice e non sono crittografati. Contengono dati sensibili come note e registri dei farmaci.';
+
+  @override
+  String get exportNoData => 'Nessun dato da esportare al momento.';
+
+  @override
+  String get exportShareSubject => 'Esportazione Daily Wellness Tracker';
+
+  @override
   String get settingsLanguage => 'Lingua';
 
   @override

@@ -8,6 +8,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'app.dart';
 import 'data/daily_repository.dart';
 import 'data/database.dart';
+import 'services/export_service.dart';
 import 'services/notification_service.dart';
 import 'utils/prefs.dart';
 import 'viewmodels/feature_settings_controller.dart';
@@ -74,6 +75,7 @@ Future<void> main() async {
         Provider.value(value: container.repository),
         ChangeNotifierProvider.value(value: navigationManager),
         Provider.value(value: notifications),
+        Provider.value(value: container.exportService),
         ChangeNotifierProvider.value(value: featureSettings),
         ChangeNotifierProvider(
           create: (_) => TodayViewModel(container.repository),
@@ -94,13 +96,14 @@ Future<void> main() async {
 class AppContainer {
   final AppDatabase database;
   final DailyRepository repository;
+  final ExportService exportService;
 
-  AppContainer._(this.database, this.repository);
+  AppContainer._(this.database, this.repository, this.exportService);
 
   factory AppContainer.create() {
     final db = AppDatabase();
     final repo = DailyRepository(db.dailyDao);
-    return AppContainer._(db, repo);
+    return AppContainer._(db, repo, ExportService(repo));
   }
 
   Future<void> dispose() => database.close();

@@ -36,6 +36,12 @@
   "settingsFeaturesSubtitle": "記録する項目を選択してください。無効にしても過去のデータは削除されません。",
   "settingsPermissionDenied": "リマインダーを受け取るにはシステム設定で通知を有効にしてください",
 
+  "settingsExportHeader": "データのエクスポート",
+  "settingsExportButton": "CSVにエクスポート",
+  "settingsExportPrivacyWarning": "エクスポートされたファイルは平文で暗号化されていません。メモや服薬記録などの機密データが含まれます。",
+  "exportNoData": "まだエクスポートできるデータがありません。",
+  "exportShareSubject": "デイリーウェルネストラッカーのエクスポート",
+
   "settingsLanguage": "言語",
   "settingsLanguageSystem": "システム標準",
   "languageEn": "English",

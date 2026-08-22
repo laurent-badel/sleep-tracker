@@ -36,6 +36,12 @@
   "settingsFeaturesSubtitle": "Wähle, was du erfassen möchtest. Deaktivieren löscht keine vergangenen Daten.",
   "settingsPermissionDenied": "Aktiviere Benachrichtigungen in den Systemeinstellungen, um Erinnerungen zu erhalten",
 
+  "settingsExportHeader": "Daten exportieren",
+  "settingsExportButton": "Als CSV exportieren",
+  "settingsExportPrivacyWarning": "Exportierte Dateien sind Klartext und nicht verschlüsselt. Sie enthalten sensible Daten wie Notizen und Medikamentenprotokolle.",
+  "exportNoData": "Noch keine Daten zum Exportieren.",
+  "exportShareSubject": "Daily Wellness Tracker Export",
+
   "settingsLanguage": "Sprache",
   "settingsLanguageSystem": "Systemstandard",
   "languageEn": "English",

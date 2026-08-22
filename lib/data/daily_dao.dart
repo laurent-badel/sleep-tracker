@@ -23,4 +23,11 @@ class DailyDao extends DatabaseAccessor<AppDatabase> with _$DailyDaoMixin {
   Future<DailyEntry?> getByDate(String date) =>
       (select(dailyEntries)..where((t) => t.date.equals(date)))
           .getSingleOrNull();
+
+  /// One-shot snapshot for CSV export (spec Phase 10) — distinct from the live
+  /// [watchAll] stream; ascending date order for a stable file.
+  Future<List<DailyEntry>> getAllForExport() =>
+      (select(dailyEntries)
+        ..orderBy([(t) => OrderingTerm.asc(t.date)]))
+          .get();
 }

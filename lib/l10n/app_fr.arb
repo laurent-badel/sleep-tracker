@@ -36,6 +36,12 @@
   "settingsFeaturesSubtitle": "Choisissez ce que vous voulez suivre. Désactiver ne supprime jamais les données passées.",
   "settingsPermissionDenied": "Activez les notifications dans les réglages système pour recevoir des rappels",
 
+  "settingsExportHeader": "Exporter les données",
+  "settingsExportButton": "Exporter en CSV",
+  "settingsExportPrivacyWarning": "Les fichiers exportés sont en texte brut et ne sont pas chiffrés. Ils contiennent des données sensibles comme les notes et les journaux de médicaments.",
+  "exportNoData": "Aucune donnée à exporter pour le moment.",
+  "exportShareSubject": "Export de l'application Daily Wellness Tracker",
+
   "settingsLanguage": "Langue",
   "settingsLanguageSystem": "Langue du système",
   "languageEn": "English",

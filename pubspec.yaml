@@ -47,6 +47,8 @@ dependencies:
     sdk: flutter
   flutter_timezone: 5.1.0
   shared_preferences: 2.5.5
+  csv: 8.0.0
+  share_plus: 13.3.0
 
 dev_dependencies:
   flutter_test:

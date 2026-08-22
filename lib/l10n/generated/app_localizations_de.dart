@@ -110,6 +110,22 @@ class AppLocalizationsDe extends AppLocalizations {
       'Aktiviere Benachrichtigungen in den Systemeinstellungen, um Erinnerungen zu erhalten';
 
   @override
+  String get settingsExportHeader => 'Daten exportieren';
+
+  @override
+  String get settingsExportButton => 'Als CSV exportieren';
+
+  @override
+  String get settingsExportPrivacyWarning =>
+      'Exportierte Dateien sind Klartext und nicht verschlüsselt. Sie enthalten sensible Daten wie Notizen und Medikamentenprotokolle.';
+
+  @override
+  String get exportNoData => 'Noch keine Daten zum Exportieren.';
+
+  @override
+  String get exportShareSubject => 'Daily Wellness Tracker Export';
+
+  @override
   String get settingsLanguage => 'Sprache';
 
   @override

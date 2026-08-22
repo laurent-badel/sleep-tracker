@@ -36,6 +36,12 @@
   "settingsFeaturesSubtitle": "Scegli cosa tracciare. Disattivare non cancella mai i dati passati.",
   "settingsPermissionDenied": "Abilita le notifiche nelle impostazioni di sistema per ricevere promemoria",
 
+  "settingsExportHeader": "Esporta dati",
+  "settingsExportButton": "Esporta in CSV",
+  "settingsExportPrivacyWarning": "I file esportati sono in testo semplice e non sono crittografati. Contengono dati sensibili come note e registri dei farmaci.",
+  "exportNoData": "Nessun dato da esportare al momento.",
+  "exportShareSubject": "Esportazione Daily Wellness Tracker",
+
   "settingsLanguage": "Lingua",
   "settingsLanguageSystem": "Predefinito di sistema",
   "languageEn": "English",
